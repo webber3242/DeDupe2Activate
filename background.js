@@ -1,4 +1,3 @@
-
 "use strict";
 
 // Configuration constants
@@ -598,3 +597,4 @@ if (typeof module !== 'undefined' && module.exports) {
         CONFIG
     };
 }
+
