@@ -1,3 +1,4 @@
+
 {
   "manifest_version": 3,
   "name": "DeDupe2Activate",
@@ -11,10 +12,15 @@
   "background": {
     "service_worker": "background.js"
   },
-  "host_permissions": [
-    "<all_urls>"
-  ],
   "incognito": "split",
+  "commands": {
+    "close-duplicate-tabs": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Close all duplicate tabs"
+    }
+  },
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",
