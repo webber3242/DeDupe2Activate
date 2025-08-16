@@ -6,7 +6,6 @@ const CONFIG = {
     TAB_REMOVAL_DELAY: 50,
     CLEANUP_INTERVAL: 60000,
     IGNORED_DOMAINS: new Set(['localhost', '127.0.0.1', 'chrome-extension']),
-    INCLUDE_QUERY_PARAMS: false,
     MAX_CACHE_SIZE: 1000,
     CLEANUP_RETENTION_SIZE: 250,
     COMPLETION_TIMEOUT: 300000 // 5 minutes
@@ -592,3 +591,4 @@ if (typeof module !== 'undefined' && module.exports) {
         CONFIG
     };
 }
+
