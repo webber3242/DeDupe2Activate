@@ -37,7 +37,7 @@ When duplicates are found, the extension keeps the "best" tab based on:
 - 🔊 Playing audio (don't close that music!)
 - 📌 Pinned tabs
 - ⏰ Most recently loaded
-- Oldest tab (as a tiebreaker)
+- 🕒 Oldest tab (as a tiebreaker)
 
 ### Performance Features
 - Processes duplicates instantly when you open them
@@ -60,15 +60,18 @@ Works with Chrome 88+ (needs Manifest V3 support).
 
 ## How It Works
 
-Once installed, it just runs in the background. No setup needed.
+Once installed, it runs automatically in the background. You can also manually trigger duplicate cleanup by clicking the extension icon in your toolbar.
 
 **Real-time duplicate closing:**
 - Open a duplicate tab → it closes immediately
 - Navigate to a duplicate URL → closes the duplicate
 - The extension figures out which tab to keep automatically
 
+**Manual cleanup:**
+- Click the DeDupe2Activate icon in your toolbar to scan and close all current duplicates
+
 **Startup cleanup:**
-- When Chrome starts, it scans for any existing duplicates and cleans them up
+- When Chrome starts, it automatically scans for any existing duplicates and cleans them up
 
 ## ⚙️ Configuration
 
@@ -79,7 +82,13 @@ const CONFIG = {
     DEBOUNCE_DELAY: 300,              // How long to wait between checks (ms)
     TAB_REMOVAL_DELAY: 50,            // Delay before switching to kept tab
     CLEANUP_INTERVAL: 60000,          // Memory cleanup frequency
+    IGNORED_DOMAINS: new Set([        // Domains to never process
+        'localhost', 
+        '127.0.0.1', 
+        'chrome-extension'
+    ]),
     MAX_CACHE_SIZE: 1000,             // Max cached URL patterns
+    CLEANUP_RETENTION_SIZE: 250,      // How many patterns to keep after cleanup
     COMPLETION_TIMEOUT: 300000        // 5 minutes - how long to remember tabs
 };
 ```
@@ -97,17 +106,18 @@ IGNORED_DOMAINS: new Set([
 ## Technical Stuff
 
 ### Architecture
-The extension has three main parts:
+The extension has three main components:
 
 **URLPatternHandler** - Figures out when URLs are duplicates
 - Uses the modern URLPattern API when available
 - Falls back to manual parsing for older browsers
-- Normalizes URLs for comparison
+- Normalizes URLs for comparison and caching
 
 **EnhancedTabTracker** - Keeps track of what's happening with tabs
 - Remembers which tabs are being processed
 - Caches URL patterns to speed things up
 - Cleans up old data automatically
+- Tracks tab creation and completion times
 
 **DuplicateTabManager** - The main controller
 - Handles both real-time and bulk duplicate detection
@@ -118,18 +128,23 @@ The extension has three main parts:
 
 **For single tabs (real-time):**
 1. Extension notices a new/changed tab
-2. Quickly checks if any existing tabs match
-3. Closes duplicates immediately, keeps the best one
+2. Uses cached patterns when possible for speed
+3. Quickly checks if any existing tabs match using sequential pattern checking
+4. Closes duplicates immediately, keeps the best one
+5. Early exit optimization - stops checking once duplicates are found
 
-**For bulk operations (startup):**
+**For bulk operations (manual/startup):**
 1. Gets all open tabs
-2. Groups them by normalized URL
-3. In each group, keeps the best tab and closes the rest
+2. Groups them by normalized URL key
+3. Uses parallel processing for efficiency
+4. In each group, keeps the best tab and closes the rest
 
 ### Event Handling
 - `tabs.onCreated` - New tab opened
 - `webNavigation.onBeforeNavigate` - Tab is about to navigate (catches duplicates early)
 - `webNavigation.onCompleted` - Page finished loading
+- `tabs.onRemoved` - Tab closed (cleanup tracking data)
+- `action.onClicked` - Extension icon clicked (manual cleanup)
 - `runtime.onStartup` - Chrome started, clean up duplicates
 - `runtime.onInstalled` - Extension installed/updated
 
@@ -140,15 +155,26 @@ The extension has three main parts:
 DeDupe2Activate/
 ├── manifest.json     # Extension config
 ├── background.js     # All the logic
-├── images/          # Icons
-└── README.md        # This file
+├── images/           # Icons
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+└── README.md         # This file
 ```
 
 ### Key Functions
-- `findDuplicatesForSingleTab()` - Fast duplicate check for one tab
-- `findAllDuplicates()` - Bulk duplicate detection for all tabs
-- `selectBestTab()` - Decides which tab to keep
+- `findDuplicatesForSingleTab()` - Fast duplicate check for one tab (optimized for real-time)
+- `findAllDuplicates()` - Bulk duplicate detection for all tabs (optimized for efficiency)
+- `selectBestTab()` - Decides which tab to keep based on priority rules
 - `closeDuplicate()` - Safely removes a duplicate tab
+- `closeAllDuplicates()` - Manual cleanup of all current duplicates
+
+### Performance Optimizations
+- **Pattern Caching**: URL patterns are cached with LRU eviction
+- **Sequential Checking**: For single tabs, stops checking once duplicates are found
+- **Parallel Processing**: Bulk operations process multiple tabs simultaneously  
+- **Debounced Processing**: Prevents excessive duplicate checks
+- **Memory Management**: Automatic cleanup of old tracking data
 
 ### Testing
 Try these scenarios:
@@ -157,26 +183,31 @@ Try these scenarios:
 3. Test with www vs non-www versions
 4. Try http vs https
 5. Test with pinned tabs, active tabs, tabs playing audio
-6. Restart Chrome to test startup cleanup
+6. Click the extension icon to test manual cleanup
+7. Restart Chrome to test startup cleanup
+8. Test with many tabs to verify performance
 
 ## Contributing
 
 Found a bug or want to add a feature?
 1. Fork the repo
 2. Make your changes
-3. Test thoroughly
+3. Test thoroughly (especially performance with many tabs)
 4. Submit a pull request
 
 When reporting issues, include:
 - Your Chrome version
+- Number of open tabs when issue occurred
 - Steps to reproduce the problem
 - What you expected vs what happened
+- Browser console errors (if any)
 
 ## License
 
 MIT License - do whatever you want with this code.
 
- 
+---
+
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/webber3242">Webber</a></p>
   <p>
