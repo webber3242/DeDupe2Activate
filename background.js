@@ -1,15 +1,15 @@
 "use strict";
 
-// Configuration constants
+// Configuration constants - Optimized values from both versions
 const CONFIG = {
     DEBOUNCE_DELAY: 300,
     TAB_REMOVAL_DELAY: 50,
     CLEANUP_INTERVAL: 60000,
     IGNORED_DOMAINS: new Set(['localhost', '127.0.0.1', 'chrome-extension']),
-    INCLUDE_QUERY_PARAMS: false,
     MAX_CACHE_SIZE: 1000,
     CLEANUP_RETENTION_SIZE: 250,
-    COMPLETION_TIMEOUT: 300000 // 5 minutes
+    COMPLETION_TIMEOUT: 300000, // 5 minutes
+    UNSAVED_DATA_CHECK_TIMEOUT 250 // Critical: Keep unsaved data protection
 };
 
 /**
@@ -105,7 +105,8 @@ const Utils = {
     debounce(func, delay) {
         const timers = new Map();
         return (...args) => {
-            const key = args[0]?.id || args[0]?.tabId || JSON.stringify(args);
+            // Optimized key generation from V2
+            const key = args[0]?.id || args[0]?.tabId || 'default';
             const existingTimer = timers.get(key);
             
             if (existingTimer) {
@@ -122,14 +123,16 @@ const Utils = {
     },
     
     isBlankURL(url) {
-        return !url || url === "about:blank";
+        return !url || url === "about:blank" || url === "chrome://newtab/";
     },
     
     isBrowserURL(url) {
-        return url?.startsWith("about:") ||
-               url?.startsWith("chrome://") ||
-               url?.startsWith("edge://") ||
-               url?.startsWith("moz-extension://");
+        if (!url) return false;
+        return url.startsWith("about:") ||
+               url.startsWith("chrome://") ||
+               url.startsWith("edge://") ||
+               url.startsWith("moz-extension://") ||
+               url.startsWith("chrome-extension://");
     },
     
     shouldProcessURL(url) {
@@ -182,6 +185,49 @@ const Utils = {
                 console.error("Handler error:", error.message, error.stack);
             });
         };
+    },
+    
+    /**
+     * CRITICAL: Check if a tab has unsaved data (from V1)
+     */
+    async checkForUnsavedData(tabId) {
+        try {
+            const results = await Promise.race([
+                chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: () => {
+                        // Check for beforeunload listeners
+                        if (window.onbeforeunload !== null) return true;
+                        
+                        // Check for modified form inputs
+                        const inputs = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea');
+                        for (const input of inputs) {
+                            if (input.value !== input.defaultValue) return true;
+                        }
+                        
+                        // Check for contenteditable elements with content
+                        const editables = document.querySelectorAll('[contenteditable="true"]');
+                        for (const editable of editables) {
+                            if (editable.textContent.trim().length > 0) return true;
+                        }
+                        
+                        // Check for common editor indicators
+                        if (document.querySelector('.ace_editor, .CodeMirror, .monaco-editor')) return true;
+                        
+                        return false;
+                    }
+                }),
+                // Timeout after configured delay
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('timeout')), CONFIG.UNSAVED_DATA_CHECK_TIMEOUT)
+                )
+            ]);
+            
+            return results[0]?.result || false;
+        } catch (error) {
+            console.debug(`Unable to check unsaved data for tab ${tabId}:`, error.message);
+            return false;
+        }
     }
 };
 
@@ -195,6 +241,7 @@ class EnhancedTabTracker {
         this.processingTabs = new Set();
         this.creationTimes = new Map();
         this.patternCache = new Map();
+        this.unsavedDataCache = new Map(); // CRITICAL: Keep unsaved data cache
         
         // Start cleanup interval
         this.cleanupInterval = setInterval(() => this.cleanup(), CONFIG.CLEANUP_INTERVAL);
@@ -222,6 +269,8 @@ class EnhancedTabTracker {
     
     markCompleted(tabId) {
         this.completionTimes.set(tabId, Date.now());
+        // Clear unsaved data cache when page completes loading
+        this.unsavedDataCache.delete(tabId);
     }
     
     markCreated(tabId) {
@@ -233,7 +282,7 @@ class EnhancedTabTracker {
     }
     
     cachePattern(key, patternData) {
-        if (patternData) {
+        if (patternData && key) {
             patternData.lastUsed = Date.now();
             this.patternCache.set(key, patternData);
             
@@ -254,11 +303,29 @@ class EnhancedTabTracker {
         return pattern;
     }
     
+    // CRITICAL: Keep unsaved data caching from V1
+    cacheUnsavedData(tabId, hasUnsavedData) {
+        this.unsavedDataCache.set(tabId, {
+            hasUnsavedData,
+            timestamp: Date.now()
+        });
+    }
+    
+    getCachedUnsavedData(tabId) {
+        const cached = this.unsavedDataCache.get(tabId);
+        // Cache is valid for 30 seconds
+        if (cached && (Date.now() - cached.timestamp) < 30000) {
+            return cached.hasUnsavedData;
+        }
+        return null;
+    }
+    
     remove(tabId) {
         this.ignoredTabs.delete(tabId);
         this.completionTimes.delete(tabId);
         this.processingTabs.delete(tabId);
         this.creationTimes.delete(tabId);
+        this.unsavedDataCache.delete(tabId);
     }
     
     cleanup() {
@@ -278,10 +345,18 @@ class EnhancedTabTracker {
             }
         }
         
-        // Manage pattern cache size with LRU eviction
+        // Clean up old unsaved data cache
+        for (const [tabId, data] of this.unsavedDataCache) {
+            if (Date.now() - data.timestamp > 60000) { // 1 minute
+                this.unsavedDataCache.delete(tabId);
+            }
+        }
+        
+        // Optimized cache cleanup from V2
         if (this.patternCache.size > CONFIG.MAX_CACHE_SIZE / 2) {
             const entries = Array.from(this.patternCache.entries());
-            const toKeep = entries.slice(-CONFIG.CLEANUP_RETENTION_SIZE);
+            entries.sort((a, b) => (b[1].lastUsed || 0) - (a[1].lastUsed || 0));
+            const toKeep = entries.slice(0, CONFIG.CLEANUP_RETENTION_SIZE);
             this.patternCache.clear();
             toKeep.forEach(([url, pattern]) => this.patternCache.set(url, pattern));
         }
@@ -297,6 +372,7 @@ class EnhancedTabTracker {
         this.processingTabs.clear();
         this.creationTimes.clear();
         this.patternCache.clear();
+        this.unsavedDataCache.clear();
     }
 }
 
@@ -311,8 +387,7 @@ class DuplicateTabManager {
     }
     
     /**
-     * OPTIMIZED: Find duplicates for a SINGLE tab (real-time events)
-     * Uses sequential pattern checking with early exit
+     * Find duplicates for a SINGLE tab (optimized from V2 but keeping V1 robustness)
      */
     async findDuplicatesForSingleTab(targetTab, loadingUrl = null) {
         const url = loadingUrl || targetTab.url;
@@ -335,7 +410,7 @@ class DuplicateTabManager {
         try {
             const allDuplicates = [];
             
-            // SEQUENTIAL pattern checking with early exit optimization
+            // Sequential pattern checking with early exit (from V2 optimization)
             for (const chromePattern of patternData.chromePatterns) {
                 const tabs = await Utils.safeQueryTabs({ url: chromePattern });
                 
@@ -362,8 +437,7 @@ class DuplicateTabManager {
     }
     
     /**
-     * BULK OPERATION: Find all duplicates across all tabs (manual cleanup)
-     * Uses parallel processing and grouping for efficiency
+     * Find all duplicates across all tabs (from V2 optimization but keeping V1 robustness)
      */
     async findAllDuplicates() {
         const allTabs = await Utils.safeQueryTabs();
@@ -387,7 +461,7 @@ class DuplicateTabManager {
             urlGroups.get(normalizedKey).push(tab);
         }
         
-        // Return only groups with duplicates (more than 1 tab)
+        // Return only groups with duplicates
         const duplicateGroups = new Map();
         for (const [key, tabs] of urlGroups.entries()) {
             if (tabs.length > 1) {
@@ -398,29 +472,65 @@ class DuplicateTabManager {
         return duplicateGroups;
     }
     
-    selectBestTab(tabs) {
-        return tabs.reduce((best, current) => {
-            // Priority 1: Active tab
-            if (current.active && !best.active) return current;
-            if (best.active && !current.active) return best;
+    /**
+     * CRITICAL: Smart priority system from V1 (with unsaved data protection)
+     */
+    async selectBestTab(tabs) {
+        if (!tabs || tabs.length === 0) return null;
+        if (tabs.length === 1) return tabs[0];
+        
+        const tabsWithPriority = await Promise.all(tabs.map(async (tab) => {
+            let priority = 0;
+            
+            // Priority 1: Check for unsaved data (HIGHEST PRIORITY)
+            let cachedUnsavedData = this.tracker.getCachedUnsavedData(tab.id);
+            if (cachedUnsavedData === null) {
+                cachedUnsavedData = await Utils.checkForUnsavedData(tab.id);
+                this.tracker.cacheUnsavedData(tab.id, cachedUnsavedData);
+            }
+            if (cachedUnsavedData) {
+                priority += 10000;
+            }
             
             // Priority 2: Audible tab
-            if (current.audible && !best.audible) return current;
-            if (best.audible && !current.audible) return best;
+            if (tab.audible) {
+                priority += 1000;
+            }
             
             // Priority 3: Pinned tab
-            if (current.pinned && !best.pinned) return current;
-            if (best.pinned && !current.pinned) return best;
+            if (tab.pinned) {
+                priority += 500;
+            }
             
-            // Priority 4: Most recently completed/created
-            const bestTime = this.tracker.getCompletionTime(best.id);
-            const currentTime = this.tracker.getCompletionTime(current.id);
-            if (currentTime > bestTime) return current;
-            if (bestTime > currentTime) return best;
+            // Priority 4: Active tab
+            if (tab.active) {
+                priority += 100;
+            }
             
-            // Priority 5: Lower tab ID (older)
-            return best.id < current.id ? best : current;
-        });
+            // Priority 5: Older tabs get bonus
+            const completionTime = this.tracker.getCompletionTime(tab.id);
+            if (completionTime > 0) {
+                priority += Math.max(0, 50 - (Date.now() - completionTime) / 1000);
+            } else {
+                priority += Math.max(0, 50 - (tab.id % 1000) / 20);
+            }
+            
+            return { tab, priority };
+        }));
+        
+        // Sort by priority and return the best tab
+        tabsWithPriority.sort((a, b) => b.priority - a.priority);
+        
+        console.debug("Tab priority selection:", tabsWithPriority.map(t => ({
+            id: t.tab.id,
+            url: t.tab.url.substring(0, 50),
+            priority: t.priority,
+            active: t.tab.active,
+            audible: t.tab.audible,
+            pinned: t.tab.pinned
+        })));
+        
+        return tabsWithPriority[0].tab;
     }
     
     async closeDuplicate(tabId, keepTab) {
@@ -446,7 +556,7 @@ class DuplicateTabManager {
     }
     
     /**
-     * Handle duplicates for a SINGLE tab (optimized for real-time events)
+     * Handle duplicates for a SINGLE tab (keeping V1 robustness)
      */
     async _handleSingleTabDuplicates(tab, loadingUrl = null) {
         if (this.tracker.isProcessing(tab.id)) return;
@@ -456,13 +566,17 @@ class DuplicateTabManager {
             const duplicates = await this.findDuplicatesForSingleTab(tab, loadingUrl);
             if (duplicates.length > 0) {
                 const allTabs = [tab, ...duplicates];
-                const tabToKeep = this.selectBestTab(allTabs);
+                const tabToKeep = await this.selectBestTab(allTabs);
+                
+                if (!tabToKeep) return;
                 
                 const closurePromises = allTabs
                     .filter(dupTab => dupTab.id !== tabToKeep.id)
                     .map(dupTab => this.closeDuplicate(dupTab.id, tabToKeep));
                     
                 await Promise.allSettled(closurePromises);
+                
+                console.log(`Kept tab ${tabToKeep.id} (${tabToKeep.url.substring(0, 50)}), closed ${closurePromises.length} duplicates`);
             }
         } catch (error) {
             console.error("Error handling single tab duplicates:", error.message);
@@ -472,27 +586,32 @@ class DuplicateTabManager {
     }
     
     /**
-     * Close ALL duplicates (bulk operation for manual cleanup)
+     * Close ALL duplicates (optimized from V2)
      */
     async closeAllDuplicates() {
         const duplicateGroups = await this.findAllDuplicates();
-        if (duplicateGroups.size === 0) return;
+        if (duplicateGroups.size === 0) {
+            console.log("No duplicate tabs found");
+            return;
+        }
         
         const closurePromises = [];
+        let totalClosed = 0;
         
-        // Process each group of duplicates
         for (const tabs of duplicateGroups.values()) {
-            const tabToKeep = this.selectBestTab(tabs);
+            const tabToKeep = await this.selectBestTab(tabs);
+            if (!tabToKeep) continue;
+            
             const tabsToClose = tabs.filter(tab => tab.id !== tabToKeep.id);
             
-            // Mark tabs for closure and add to promise array
             tabsToClose.forEach(tab => {
                 this.tracker.ignore(tab.id);
                 closurePromises.push(Utils.safeRemoveTab(tab.id));
             });
             
-            // Activate the kept tab if needed
-            if (!tabToKeep.active && tabsToClose.length > 0) {
+            totalClosed += tabsToClose.length;
+            
+            if (!tabToKeep.active && tabsToClose.some(t => t.active)) {
                 setTimeout(async () => {
                     try {
                         await chrome.tabs.update(tabToKeep.id, { active: true });
@@ -503,18 +622,17 @@ class DuplicateTabManager {
             }
         }
         
-        // Execute all closures in parallel
         const results = await Promise.allSettled(closurePromises);
         const failed = results.filter(r => r.status === 'rejected').length;
         if (failed > 0) {
             console.warn(`Failed to close ${failed} duplicate tabs`);
         }
         
-        console.log(`Processed ${duplicateGroups.size} duplicate groups, closed ${closurePromises.length} tabs`);
+        console.log(`Processed ${duplicateGroups.size} duplicate groups, closed ${totalClosed} tabs (${failed} failed)`);
     }
     
     initializeEventListeners() {
-        // SINGLE TAB EVENTS - Use optimized single-tab duplicate finder
+        // Tab creation handler
         chrome.tabs.onCreated.addListener(Utils.safeHandler(async (tab) => {
             this.tracker.markCreated(tab.id);
             if (tab.status === "complete" && !Utils.isBlankURL(tab.url) && Utils.shouldProcessURL(tab.url)) {
@@ -549,7 +667,7 @@ class DuplicateTabManager {
             this.tracker.remove(tabId);
         });
         
-        // BULK OPERATIONS - Use optimized bulk duplicate finder
+        // Browser startup handlers
         if (chrome.runtime.onStartup) {
             chrome.runtime.onStartup.addListener(Utils.safeHandler(() => {
                 setTimeout(() => this.closeAllDuplicates(), 2000);
@@ -577,7 +695,7 @@ chrome.action.onClicked.addListener(() => {
 });
 
 // Logging
-console.log("Optimized duplicate tab closer initialized successfully");
+console.log("Optimized duplicate tab closer with unsaved data protection initialized successfully");
 console.log(`URLPattern support: ${URLPatternHandler.isSupported() ? '✅ Available' : '❌ Using fallback'}`);
 
 // Cleanup handler for extension suspension
@@ -587,7 +705,7 @@ if (chrome.runtime.onSuspend) {
     });
 }
 
-// Export for testing (if in Node.js environment)
+// Export for testing
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         URLPatternHandler,
@@ -597,4 +715,3 @@ if (typeof module !== 'undefined' && module.exports) {
         CONFIG
     };
 }
-
