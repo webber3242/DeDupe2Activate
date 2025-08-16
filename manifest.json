@@ -1,10 +1,9 @@
-
 {
   "manifest_version": 3,
   "name": "DeDupe2Activate",
   "version": "1.0",
   "author": "Webber",
-  "description": "Automatically closes duplicate tabs, Activate Remaining Tab",
+  "description": "Automatically closes duplicate tabs and activates remaining tab",
   "permissions": [
     "tabs",
     "webNavigation"
@@ -13,13 +12,9 @@
     "service_worker": "background.js"
   },
   "incognito": "split",
-      "description": "Close all duplicate tabs"
-    }
-  },
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",
     "128": "images/icon128.png"
   }
 }
-
