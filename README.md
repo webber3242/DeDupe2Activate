@@ -103,10 +103,7 @@ IGNORED_DOMAINS: new Set([
 ])
 ```
 
-## Technical Stuff
-
-### Architecture
-The extension has three main components:
+## Technical Info
 
 **URLPatternHandler** - Figures out when URLs are duplicates
 - Uses the modern URLPattern API when available
@@ -123,8 +120,6 @@ The extension has three main components:
 - Handles both real-time and bulk duplicate detection
 - Manages all the Chrome extension events
 - Decides which tabs to keep or close
-
-### How Duplicate Detection Works
 
 **For single tabs (real-time):**
 1. Extension notices a new/changed tab
@@ -176,17 +171,7 @@ DeDupe2Activate/
 - **Debounced Processing**: Prevents excessive duplicate checks
 - **Memory Management**: Automatic cleanup of old tracking data
 
-### Testing
-Try these scenarios:
-1. Open multiple tabs to the same URL
-2. Navigate existing tabs to URLs that are already open
-3. Test with www vs non-www versions
-4. Try http vs https
-5. Test with pinned tabs, active tabs, tabs playing audio
-6. Click the extension icon to test manual cleanup
-7. Restart Chrome to test startup cleanup
-8. Test with many tabs to verify performance
-
+ 
 ## Contributing
 
 Found a bug or want to add a feature?
