@@ -19,202 +19,195 @@
   </p>
 </div>
 
-🚀 Features
-Intelligent Duplicate Detection
+## 🚀 Features
 
-Advanced URL Pattern Matching: Uses modern URLPattern API with fallback support for comprehensive duplicate detection
-Subdomain Awareness: Treats www.example.com and example.com as duplicates
-Query Parameter Handling: Configurable inclusion/exclusion of URL parameters
-Path Normalization: Handles trailing slashes and path variations intelligently
+### Intelligent Duplicate Detection
+- **Advanced URL Pattern Matching**: Uses modern URLPattern API with fallback support for comprehensive duplicate detection
+- **Subdomain Awareness**: Treats www.example.com and example.com as duplicates
+- **Query Parameter Handling**: Configurable inclusion/exclusion of URL parameters
+- **Path Normalization**: Handles trailing slashes and path variations intelligently
 
-Smart Tab Selection Algorithm
+### Smart Tab Selection Algorithm
 The extension uses a sophisticated priority system to determine which tab to keep:
 
-🎯 Active Tab Priority: Currently active tabs are preferred
-🔊 Audio Playback: Tabs playing audio are prioritized
-📌 Pinned Status: Pinned tabs take precedence
-⏰ Load Completion: More recently loaded tabs are favored
-🔢 Tab Age: Older tabs win ties (lower tab ID)
+- 🎯 **Active Tab Priority**: Currently active tabs are preferred
+- 🔊 **Audio Playback**: Tabs playing audio are prioritized
+- 📌 **Pinned Status**: Pinned tabs take precedence
+- ⏰ **Load Completion**: More recently loaded tabs are favored
+- 🔢 **Tab Age**: Older tabs win ties (lower tab ID)
 
-Performance Optimized
+### Performance Optimized
+- **Debounced Processing**: Prevents excessive duplicate checks during rapid navigation
+- **Memory Management**: Automatic cleanup of cached data and tracking information
+- **Selective Processing**: Ignores localhost, internal pages, and browser URLs
+- **Pattern Caching**: Efficient URL pattern storage with size limits
 
-Debounced Processing: Prevents excessive duplicate checks during rapid navigation
-Memory Management: Automatic cleanup of cached data and tracking information
-Selective Processing: Ignores localhost, internal pages, and browser URLs
-Pattern Caching: Efficient URL pattern storage with size limits
+### User Experience
+- **Real-time Processing**: Duplicates are closed as soon as they're detected
+- **Keyboard Shortcut**: Alt+Shift+D to manually close all duplicates
+- **Startup Cleanup**: Automatically removes duplicates when browser starts
+- **Incognito Support**: Works in private browsing mode
 
-User Experience
+## 📦 Installation
 
-Real-time Processing: Duplicates are closed as soon as they're detected
-Keyboard Shortcut: Alt+Shift+D to manually close all duplicates
-Startup Cleanup: Automatically removes duplicates when browser starts
-Incognito Support: Works in private browsing mode
+### From Chrome Web Store
+1. Visit the Chrome Web Store page (link pending publication)
+2. Click "Add to Chrome"
+3. Confirm installation in the popup dialog
 
+### Manual Installation (Developer Mode)
+1. Download or clone this repository:
+   ```bash
+   git clone https://github.com/webber3242/DeDupe2Activate.git
+   ```
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked" and select the extension folder
+5. The extension will be installed and ready to use
 
-📦 Installation
-From Chrome Web Store
+### Prerequisites
+- Google Chrome version 88+ (for Manifest V3 support)
+- Modern browser with URLPattern API support (recommended)
 
-Visit the Chrome Web Store page (link pending publication)
-Click "Add to Chrome"
-Confirm installation in the popup dialog
+## 🎯 Usage
 
-Manual Installation (Developer Mode)
-
-Download or clone this repository:
-bashgit clone https://github.com/webber3242/DeDupe2Activate.git
-
-Open Chrome and navigate to chrome://extensions/
-Enable "Developer mode" in the top right corner
-Click "Load unpacked" and select the extension folder
-The extension will be installed and ready to use
-
-Prerequisites
-
-Google Chrome version 88+ (for Manifest V3 support)
-Modern browser with URLPattern API support (recommended)
-
-
-🎯 Usage
-Automatic Operation
+### Automatic Operation
 Once installed, DeDupe2Activate works automatically in the background:
 
-New Tab Detection: When you open a duplicate URL, the extension immediately closes it
-Navigation Tracking: Monitors when existing tabs navigate to duplicate URLs
-Background Processing: Continuously manages duplicates without user intervention
+- **New Tab Detection**: When you open a duplicate URL, the extension immediately closes it
+- **Navigation Tracking**: Monitors when existing tabs navigate to duplicate URLs
+- **Background Processing**: Continuously manages duplicates without user intervention
 
-Manual Control
+### Manual Control
+- **Keyboard Shortcut**: Press Alt+Shift+D to instantly close all current duplicates
+- **Startup Cleanup**: Extension automatically runs a cleanup when Chrome starts
 
-Keyboard Shortcut: Press Alt+Shift+D to instantly close all current duplicates
-Startup Cleanup: Extension automatically runs a cleanup when Chrome starts
-
-What Counts as a Duplicate?
+### What Counts as a Duplicate?
 The extension considers URLs duplicates when they have:
-
-Same domain (with or without www.)
-Same path (ignoring trailing slashes)
-Optional: Same query parameters (configurable)
+- Same domain (with or without www.)
+- Same path (ignoring trailing slashes)
+- Optional: Same query parameters (configurable)
 
 Examples of detected duplicates:
-✅ https://example.com/page
-✅ https://www.example.com/page/
-✅ http://example.com/page?param=value
+- ✅ https://example.com/page
+- ✅ https://www.example.com/page/
+- ✅ http://example.com/page?param=value
 
-⚙️ Configuration
-Customizable Constants
-You can modify these values in background.js:
-javascriptconst DEBOUNCE_DELAY = 300;          // Milliseconds to wait between duplicate checks
+## ⚙️ Configuration
+
+### Customizable Constants
+You can modify these values in `background.js`:
+
+```javascript
+const DEBOUNCE_DELAY = 300;          // Milliseconds to wait between duplicate checks
 const TAB_REMOVAL_DELAY = 50;        // Delay before activating kept tab
 const CLEANUP_INTERVAL = 60000;      // Memory cleanup frequency (1 minute)
 const INCLUDE_QUERY_PARAMS = false;  // Whether to consider query params in duplicates
-Ignored Domains
-The extension automatically ignores certain domains:
+```
 
-localhost and 127.0.0.1
-Chrome extension pages
-Browser internal pages (chrome://, about:)
+### Ignored Domains
+The extension automatically ignores certain domains:
+- localhost and 127.0.0.1
+- Chrome extension pages
+- Browser internal pages (chrome://, about:)
 
 To add more ignored domains, modify the IGNORED_DOMAINS set:
-javascriptconst IGNORED_DOMAINS = new Set(['localhost', '127.0.0.1', 'chrome-extension', 'your-domain.com']);
 
-🏗️ Technical Architecture
-Core Components
-URLPatternHandler
+```javascript
+const IGNORED_DOMAINS = new Set(['localhost', '127.0.0.1', 'chrome-extension', 'your-domain.com']);
+```
 
-Handles URL parsing and pattern matching
-Provides fallback support for older browsers
-Manages Chrome query patterns for tab searching
+## 🏗️ Technical Architecture
 
-EnhancedTabTracker
+### Core Components
 
-Tracks tab states and processing status
-Manages completion times and creation timestamps
-Handles pattern caching and memory cleanup
+**URLPatternHandler**
+- Handles URL parsing and pattern matching
+- Provides fallback support for older browsers
+- Manages Chrome query patterns for tab searching
 
-Event Listeners
+**EnhancedTabTracker**
+- Tracks tab states and processing status
+- Manages completion times and creation timestamps
+- Handles pattern caching and memory cleanup
 
-tabs.onCreated: Monitors new tab creation
-webNavigation.onBeforeNavigate: Catches navigation starts
-webNavigation.onCompleted: Handles completed page loads
-commands.onCommand: Processes keyboard shortcuts
+**Event Listeners**
+- `tabs.onCreated`: Monitors new tab creation
+- `webNavigation.onBeforeNavigate`: Catches navigation starts
+- `webNavigation.onCompleted`: Handles completed page loads
+- `commands.onCommand`: Processes keyboard shortcuts
 
-Browser API Usage
+**Browser API Usage**
+- Tabs API: Query, remove, and update tab properties
+- WebNavigation API: Monitor page navigation events
+- Commands API: Handle keyboard shortcuts
+- Runtime API: Manage extension lifecycle events
 
-Tabs API: Query, remove, and update tab properties
-WebNavigation API: Monitor page navigation events
-Commands API: Handle keyboard shortcuts
-Runtime API: Manage extension lifecycle events
+## 🛠️ Development
 
-
-🛠️ Development
-File Structure
+### File Structure
+```
 DeDupe2Activate/
 ├── manifest.json          # Extension configuration
-├── background.js          # Main service worker logic  
+├── background.js          # Main service worker logic
 ├── images/               # Extension icons
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
 └── README.md            # This documentation
-Key Functions
+```
 
-findDuplicates(): Identifies duplicate tabs for a given URL
-selectBestTab(): Determines which tab to keep using priority algorithm
-handleDuplicates(): Orchestrates the duplicate detection and removal process
-closeAllDuplicates(): Performs bulk duplicate cleanup
+### Key Functions
+- `findDuplicates()`: Identifies duplicate tabs for a given URL
+- `selectBestTab()`: Determines which tab to keep using priority algorithm
+- `handleDuplicates()`: Orchestrates the duplicate detection and removal process
+- `closeAllDuplicates()`: Performs bulk duplicate cleanup
 
-Testing
+### Testing
 Test the extension by:
+1. Opening multiple tabs with the same URL
+2. Navigating existing tabs to duplicate URLs
+3. Using the keyboard shortcut Alt+Shift+D
+4. Restarting Chrome to test startup cleanup
 
-Opening multiple tabs with the same URL
-Navigating existing tabs to duplicate URLs
-Using the keyboard shortcut Alt+Shift+D
-Restarting Chrome to test startup cleanup
+## 🤝 Contributing
 
+### Getting Started
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and test thoroughly
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-🤝 Contributing
-Getting Started
+### Development Guidelines
+- Follow existing code style and conventions
+- Add comments for complex logic
+- Test with multiple browser versions
+- Ensure backward compatibility
+- Update documentation for new features
 
-Fork the repository
-Create a feature branch: git checkout -b feature/amazing-feature
-Make your changes and test thoroughly
-Commit your changes: git commit -m 'Add amazing feature'
-Push to the branch: git push origin feature/amazing-feature
-Open a Pull Request
-
-Development Guidelines
-
-Follow existing code style and conventions
-Add comments for complex logic
-Test with multiple browser versions
-Ensure backward compatibility
-Update documentation for new features
-
-Reporting Issues
+### Reporting Issues
 Please use the GitHub Issues page to report bugs or request features.
+
 Include:
+- Chrome version
+- Extension version
+- Steps to reproduce
+- Expected vs actual behavior
 
-Chrome version
-Extension version
-Steps to reproduce
-Expected vs actual behavior
-
-
-📄 License
+## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-📞 Support
+## 📞 Support
+- **GitHub Issues**: Report bugs or request features
+- **Email**: Contact the author for direct support
+- **Wiki**: Check the project wiki for additional documentation
 
-GitHub Issues: Report bugs or request features
-Email: Contact the author for direct support
-Wiki: Check the project wiki for additional documentation
-
-
-🙏 Acknowledgments
-
-Thanks to the Chrome Extensions documentation team
-Inspired by various tab management tools in the ecosystem
-Built with modern web APIs and best practices
-
+## 🙏 Acknowledgments
+- Thanks to the Chrome Extensions documentation team
+- Inspired by various tab management tools in the ecosystem
+- Built with modern web APIs and best practices
 
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/webber3242">Webber</a></p>
