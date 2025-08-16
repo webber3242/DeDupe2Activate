@@ -39,12 +39,6 @@ When duplicates are found, the extension keeps the "best" tab based on:
 - ⏰ Most recently loaded
 - 🕒 Oldest tab (as a tiebreaker)
 
-### Performance Features
-- Processes duplicates instantly when you open them
-- Catches duplicates before pages even finish loading  
-- Cleans up existing duplicates when Chrome starts
-- Uses smart caching to avoid slowing down your browser
-
 ## 📦 Installation
 
 **From Chrome Web Store:**
