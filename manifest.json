@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
   "name": "DeDupe2Activate",
-  "version": "1.0.0",
+  "version": "1.0",
   "author": "Webber",
   "description": "Automatically closes duplicate tabs, Activate Remaining Tab",
   "permissions": [
     "tabs",
     "webNavigation",
-    "windows"
   ],
   "background": {
     "service_worker": "background.js"
