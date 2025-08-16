@@ -93,90 +93,88 @@ IGNORED_DOMAINS: new Set([
 ])
 ```
 
-Technical Stuff
-Architecture
+## Technical Stuff
+
+### Architecture
 The extension has three main parts:
-URLPatternHandler - Figures out when URLs are duplicates
 
-Uses the modern URLPattern API when available
-Falls back to manual parsing for older browsers
-Normalizes URLs for comparison
+**URLPatternHandler** - Figures out when URLs are duplicates
+- Uses the modern URLPattern API when available
+- Falls back to manual parsing for older browsers
+- Normalizes URLs for comparison
 
-EnhancedTabTracker - Keeps track of what's happening with tabs
+**EnhancedTabTracker** - Keeps track of what's happening with tabs
+- Remembers which tabs are being processed
+- Caches URL patterns to speed things up
+- Cleans up old data automatically
 
-Remembers which tabs are being processed
-Caches URL patterns to speed things up
-Cleans up old data automatically
+**DuplicateTabManager** - The main controller
+- Handles both real-time and bulk duplicate detection
+- Manages all the Chrome extension events
+- Decides which tabs to keep or close
 
-DuplicateTabManager - The main controller
+### How Duplicate Detection Works
 
-Handles both real-time and bulk duplicate detection
-Manages all the Chrome extension events
-Decides which tabs to keep or close
+**For single tabs (real-time):**
+1. Extension notices a new/changed tab
+2. Quickly checks if any existing tabs match
+3. Closes duplicates immediately, keeps the best one
 
-How Duplicate Detection Works
-For single tabs (real-time):
+**For bulk operations (startup):**
+1. Gets all open tabs
+2. Groups them by normalized URL
+3. In each group, keeps the best tab and closes the rest
 
-Extension notices a new/changed tab
-Quickly checks if any existing tabs match
-Closes duplicates immediately, keeps the best one
+### Event Handling
+- `tabs.onCreated` - New tab opened
+- `webNavigation.onBeforeNavigate` - Tab is about to navigate (catches duplicates early)
+- `webNavigation.onCompleted` - Page finished loading
+- `runtime.onStartup` - Chrome started, clean up duplicates
+- `runtime.onInstalled` - Extension installed/updated
 
-For bulk operations (startup):
+## 🛠️ Development
 
-Gets all open tabs
-Groups them by normalized URL
-In each group, keeps the best tab and closes the rest
-
-Event Handling
-
-tabs.onCreated - New tab opened
-webNavigation.onBeforeNavigate - Tab is about to navigate (catches duplicates early)
-webNavigation.onCompleted - Page finished loading
-runtime.onStartup - Chrome started, clean up duplicates
-runtime.onInstalled - Extension installed/updated
-
-🛠️ Development
-File Structure
+### File Structure
+```
 DeDupe2Activate/
 ├── manifest.json     # Extension config
 ├── background.js     # All the logic
 ├── images/          # Icons
 └── README.md        # This file
-Key Functions
+```
 
-findDuplicatesForSingleTab() - Fast duplicate check for one tab
-findAllDuplicates() - Bulk duplicate detection for all tabs
-selectBestTab() - Decides which tab to keep
-closeDuplicate() - Safely removes a duplicate tab
+### Key Functions
+- `findDuplicatesForSingleTab()` - Fast duplicate check for one tab
+- `findAllDuplicates()` - Bulk duplicate detection for all tabs
+- `selectBestTab()` - Decides which tab to keep
+- `closeDuplicate()` - Safely removes a duplicate tab
 
-Testing
+### Testing
 Try these scenarios:
+1. Open multiple tabs to the same URL
+2. Navigate existing tabs to URLs that are already open
+3. Test with www vs non-www versions
+4. Try http vs https
+5. Test with pinned tabs, active tabs, tabs playing audio
+6. Restart Chrome to test startup cleanup
 
-Open multiple tabs to the same URL
-Navigate existing tabs to URLs that are already open
-Test with www vs non-www versions
-Try http vs https
-Test with pinned tabs, active tabs, tabs playing audio
-Restart Chrome to test startup cleanup
+## Contributing
 
-Contributing
 Found a bug or want to add a feature?
-
-Fork the repo
-Make your changes
-Test thoroughly
-Submit a pull request
+1. Fork the repo
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
 
 When reporting issues, include:
+- Your Chrome version
+- Steps to reproduce the problem
+- What you expected vs what happened
 
-Your Chrome version
-Steps to reproduce the problem
-What you expected vs what happened
+## License
 
-License
 MIT License - do whatever you want with this code.
 
-Note: This extension only works with regular web pages. It ignores browser internal pages, localhost, and extension pages to avoid breaking anything important.
  
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/webber3242">Webber</a></p>
