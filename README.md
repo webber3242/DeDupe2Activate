@@ -34,10 +34,10 @@ Ever opened the same webpage in multiple tabs by accident? Or clicked a bookmark
 ### Intelligent Tab Selection
 When duplicates are found, the extension keeps the "best" tab based on:
 - 🎯 Active tab (the one you're currently viewing)
-- 🔊 Playing audio (don't close that music!)
+- 🔊 Playing audio 
 - 📌 Pinned tabs
 - ⏰ Most recently loaded
-- 🕒 Oldest tab (as a tiebreaker)
+- 🕒 Oldest tab 
 
 ## 📦 Installation
 
