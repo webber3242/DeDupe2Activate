@@ -73,6 +73,20 @@ Once installed, it runs automatically in the background. You can also manually t
 **Startup cleanup:**
 - When Chrome starts, it automatically scans for any existing duplicates and cleans them up
 
+
+### File Structure
+```
+DeDupe2Activate/
+├── manifest.json     # Extension config
+├── background.js     # All the logic
+├── images/           # Icons
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+└── README.md         # This file
+```
+
+ 
 ## ⚙️ Configuration
 
 You can tweak these settings by editing the `CONFIG` object in `background.js`:
@@ -102,7 +116,19 @@ IGNORED_DOMAINS: new Set([
     'internal-site.company.com'  // Add your own here
 ])
 ```
+### File Structure
+```
+DeDupe2Activate/
+├── manifest.json     # Extension config
+├── background.js     # All the logic
+├── images/           # Icons
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+└── README.md         # This file
+```
 
+ 
 ## Technical Info
 
 **URLPatternHandler** - Figures out when URLs are duplicates
@@ -121,18 +147,8 @@ IGNORED_DOMAINS: new Set([
 - Manages all the Chrome extension events
 - Decides which tabs to keep or close
 
-**For single tabs (real-time):**
-1. Extension notices a new/changed tab
-2. Uses cached patterns when possible for speed
-3. Quickly checks if any existing tabs match using sequential pattern checking
-4. Closes duplicates immediately, keeps the best one
-5. Early exit optimization - stops checking once duplicates are found
 
-**For bulk operations (manual/startup):**
-1. Gets all open tabs
-2. Groups them by normalized URL key
-3. Uses parallel processing for efficiency
-4. In each group, keeps the best tab and closes the rest
+## 🛠️ Development
 
 ### Event Handling
 - `tabs.onCreated` - New tab opened
@@ -142,20 +158,6 @@ IGNORED_DOMAINS: new Set([
 - `action.onClicked` - Extension icon clicked (manual cleanup)
 - `runtime.onStartup` - Chrome started, clean up duplicates
 - `runtime.onInstalled` - Extension installed/updated
-
-## 🛠️ Development
-
-### File Structure
-```
-DeDupe2Activate/
-├── manifest.json     # Extension config
-├── background.js     # All the logic
-├── images/           # Icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md         # This file
-```
 
 ### Key Functions
 - `findDuplicatesForSingleTab()` - Fast duplicate check for one tab (optimized for real-time)
@@ -171,7 +173,19 @@ DeDupe2Activate/
 - **Debounced Processing**: Prevents excessive duplicate checks
 - **Memory Management**: Automatic cleanup of old tracking data
 
- 
+**For single tabs (real-time):**
+1. Extension notices a new/changed tab
+2. Uses cached patterns when possible for speed
+3. Quickly checks if any existing tabs match using sequential pattern checking
+4. Closes duplicates immediately, keeps the best one
+5. Early exit optimization - stops checking once duplicates are found
+
+**For bulk operations (manual/startup):**
+1. Gets all open tabs
+2. Groups them by normalized URL key
+3. Uses parallel processing for efficiency
+4. In each group, keeps the best tab and closes the rest
+
 ## Contributing
 
 Found a bug or want to add a feature?
