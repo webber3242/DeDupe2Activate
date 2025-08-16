@@ -13,11 +13,6 @@
     "service_worker": "background.js"
   },
   "incognito": "split",
-  "commands": {
-    "close-duplicate-tabs": {
-      "suggested_key": {
-        "default": "Alt+Shift+D"
-      },
       "description": "Close all duplicate tabs"
     }
   },
@@ -27,3 +22,4 @@
     "128": "images/icon128.png"
   }
 }
+
