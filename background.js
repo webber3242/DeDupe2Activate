@@ -571,6 +571,11 @@ class DuplicateTabManager {
 // Initialize the duplicate tab manager
 const duplicateTabManager = new DuplicateTabManager();
 
+// Browser action/extension icon click
+chrome.action.onClicked.addListener(() => {
+    duplicateTabManager.closeAllDuplicates();
+});
+
 // Logging
 console.log("Optimized duplicate tab closer initialized successfully");
 console.log(`URLPattern support: ${URLPatternHandler.isSupported() ? '✅ Available' : '❌ Using fallback'}`);
