@@ -68,22 +68,31 @@ Startup cleanup:
 
 When Chrome starts, it scans for any existing duplicates and cleans them up
 
-⚙️ Configuration
-You can tweak these settings by editing the CONFIG object in background.js:
-javascriptconst CONFIG = {
+
+## ⚙️ Configuration
+
+You can tweak these settings by editing the `CONFIG` object in `background.js`:
+
+```javascript
+const CONFIG = {
     DEBOUNCE_DELAY: 300,              // How long to wait between checks (ms)
     TAB_REMOVAL_DELAY: 50,            // Delay before switching to kept tab
     CLEANUP_INTERVAL: 60000,          // Memory cleanup frequency
     MAX_CACHE_SIZE: 1000,             // Max cached URL patterns
     COMPLETION_TIMEOUT: 300000        // 5 minutes - how long to remember tabs
 };
-Adding domains to ignore:
-javascriptIGNORED_DOMAINS: new Set([
+```
+
+**Adding domains to ignore:**
+```javascript
+IGNORED_DOMAINS: new Set([
     'localhost', 
     '127.0.0.1', 
     'chrome-extension',
     'internal-site.company.com'  // Add your own here
 ])
+```
+
 Technical Stuff
 Architecture
 The extension has three main parts:
