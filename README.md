@@ -24,10 +24,10 @@ Ever opened the same webpage in multiple tabs by accident? Or clicked a bookmark
 
 ### Intelligent Tab Selection
 When duplicates are found, the extension keeps the "best" tab based on:
-- Active tab (the one you're currently viewing)
-- Playing audio (don't close that music!)
-- Pinned tabs
-- Most recently loaded
+- 🎯 Active tab (the one you're currently viewing)
+- 🔊 Playing audio (don't close that music!)
+- 📌 Pinned tabs
+- ⏰ Most recently loaded
 - Oldest tab (as a tiebreaker)
 
 ### Performance Features
@@ -36,7 +36,7 @@ When duplicates are found, the extension keeps the "best" tab based on:
 - Cleans up existing duplicates when Chrome starts
 - Uses smart caching to avoid slowing down your browser
 
-## Installation
+## 📦 Installation
 
 **From Chrome Web Store:**
 Coming soon - link will be added once published.
@@ -61,7 +61,7 @@ Once installed, it just runs in the background. No setup needed.
 **Startup cleanup:**
 - When Chrome starts, it scans for any existing duplicates and cleans them up
 
-## Configuration
+## ⚙️ Configuration
 
 You can tweak these settings by editing the `CONFIG` object in `background.js`:
 
@@ -124,7 +124,7 @@ The extension has three main parts:
 - `runtime.onStartup` - Chrome started, clean up duplicates
 - `runtime.onInstalled` - Extension installed/updated
 
-## Development
+## 🛠️ Development
 
 ### File Structure
 ```
