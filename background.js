@@ -1,6 +1,6 @@
 "use strict";
 
-// Configuration constants
+
 const CONFIG = {
     DEBOUNCE_DELAY: 300,
     TAB_REMOVAL_DELAY: 50,
@@ -12,9 +12,7 @@ const CONFIG = {
     COMPLETION_TIMEOUT: 300000 // 5 minutes
 };
 
-/**
- * Handles URL pattern matching and duplicate detection
- */
+
 class URLPatternHandler {
     static isSupported() {
         return typeof URLPattern !== 'undefined';
@@ -98,9 +96,7 @@ class URLPatternHandler {
     }
 }
 
-/**
- * Utility functions
- */
+
 const Utils = {
     debounce(func, delay) {
         const timers = new Map();
@@ -300,9 +296,7 @@ class EnhancedTabTracker {
     }
 }
 
-/**
- * Main duplicate tab management class
- */
+
 class DuplicateTabManager {
     constructor() {
         this.tracker = new EnhancedTabTracker();
