@@ -33,17 +33,23 @@ class URLPatternHandler {
         try {
             const parsed = new URL(url);
             const baseHostname = parsed.hostname.replace(/^www\./, '').toLowerCase();
-            const normalizedPath = parsed.pathname.replace(/\/$/, '');
+            const normalizedPath = parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/$/, '');
+            
+            const chromePatterns = normalizedPath === '/'
+                ? [`*://${baseHostname}/`]
+                : [
+                    `*://${baseHostname}${normalizedPath}`,
+                    `*://${baseHostname}${normalizedPath}/`,
+                    `*://www.${baseHostname}${normalizedPath}`,
+                    `*://www.${baseHostname}${normalizedPath}/`
+                ];
             
             const patternData = {
                 key: `${baseHostname}${normalizedPath}`,
                 originalUrl: url,
                 hostname: baseHostname,
                 pathname: normalizedPath,
-                chromePatterns: [
-                    `*://${baseHostname}${parsed.pathname}*`,
-                    `*://www.${baseHostname}${parsed.pathname}*`
-                ]
+                chromePatterns
             };
             
             if (this.isSupported()) {
@@ -114,15 +120,18 @@ const Utils = {
             timers.set(key, timerId);
         };
     },
-
+    
     isBlankURL(url) {
         return !url || url === "about:blank";
     },
-
+    
     isBrowserURL(url) {
-        return url?.startsWith("about:") || url?.startsWith("chrome://");
+        return url?.startsWith("about:") ||
+               url?.startsWith("chrome://") ||
+               url?.startsWith("edge://") ||
+               url?.startsWith("moz-extension://");
     },
-
+    
     shouldProcessURL(url) {
         if (!url || typeof url !== 'string' || !URLPatternHandler.isValidURL(url)) {
             return false;
@@ -130,15 +139,15 @@ const Utils = {
         
         try {
             const hostname = new URL(url).hostname.toLowerCase();
+            const baseDomain = hostname.split('.').slice(-2).join('.');
+            
             return !CONFIG.IGNORED_DOMAINS.has(hostname) &&
-                !Array.from(CONFIG.IGNORED_DOMAINS).some(domain =>
-                    hostname === domain || hostname.endsWith('.' + domain)
-                );
+                   !CONFIG.IGNORED_DOMAINS.has(baseDomain);
         } catch {
             return false;
         }
     },
-
+    
     async safeGetTab(tabId) {
         try {
             return await chrome.tabs.get(tabId);
@@ -147,7 +156,7 @@ const Utils = {
             return null;
         }
     },
-
+    
     async safeQueryTabs(queryInfo = {}) {
         try {
             return await chrome.tabs.query({ windowType: "normal", ...queryInfo });
@@ -156,7 +165,7 @@ const Utils = {
             return [];
         }
     },
-
+    
     async safeRemoveTab(tabId) {
         try {
             await chrome.tabs.remove(tabId);
@@ -166,7 +175,7 @@ const Utils = {
             return false;
         }
     },
-
+    
     safeHandler(handler) {
         return (...args) => {
             Promise.resolve(handler(...args)).catch(error => {
@@ -223,14 +232,26 @@ class EnhancedTabTracker {
         return this.completionTimes.get(tabId) || this.creationTimes.get(tabId) || 0;
     }
     
-    cachePattern(url, patternData) {
-        if (patternData && this.patternCache.size < CONFIG.MAX_CACHE_SIZE) {
-            this.patternCache.set(url, patternData);
+    cachePattern(key, patternData) {
+        if (patternData) {
+            patternData.lastUsed = Date.now();
+            this.patternCache.set(key, patternData);
+            
+            if (this.patternCache.size > CONFIG.MAX_CACHE_SIZE) {
+                const entries = [...this.patternCache.entries()];
+                entries.sort((a, b) => b[1].lastUsed - a[1].lastUsed);
+                const toKeep = entries.slice(0, CONFIG.CLEANUP_RETENTION_SIZE);
+                this.patternCache = new Map(toKeep);
+            }
         }
     }
     
-    getCachedPattern(url) {
-        return this.patternCache.get(url);
+    getCachedPattern(key) {
+        const pattern = this.patternCache.get(key);
+        if (pattern) {
+            pattern.lastUsed = Date.now();
+        }
+        return pattern;
     }
     
     remove(tabId) {
@@ -257,7 +278,7 @@ class EnhancedTabTracker {
             }
         }
         
-        // Manage pattern cache size
+        // Manage pattern cache size with LRU eviction
         if (this.patternCache.size > CONFIG.MAX_CACHE_SIZE / 2) {
             const entries = Array.from(this.patternCache.entries());
             const toKeep = entries.slice(-CONFIG.CLEANUP_RETENTION_SIZE);
@@ -300,11 +321,15 @@ class DuplicateTabManager {
             return [];
         }
         
-        let patternData = this.tracker.getCachedPattern(url);
+        const cacheKey = URLPatternHandler.getNormalizedKey(url);
+        let patternData = cacheKey && this.tracker.getCachedPattern(cacheKey);
+        
         if (!patternData) {
             patternData = URLPatternHandler.createDuplicatePattern(url);
             if (!patternData) return [];
-            this.tracker.cachePattern(url, patternData);
+            if (cacheKey) {
+                this.tracker.cachePattern(cacheKey, patternData);
+            }
         }
         
         try {
@@ -324,7 +349,6 @@ class DuplicateTabManager {
                 allDuplicates.push(...matches);
                 
                 // Early exit: if we found duplicates, no need to check other patterns
-                // (unless we want to be extra thorough - can remove this optimization)
                 if (allDuplicates.length > 0) {
                     break;
                 }
@@ -400,10 +424,13 @@ class DuplicateTabManager {
     }
     
     async closeDuplicate(tabId, keepTab) {
+        const tab = await Utils.safeGetTab(tabId);
+        const wasActive = tab?.active;
+        
         this.tracker.ignore(tabId);
         const success = await Utils.safeRemoveTab(tabId);
         
-        if (success && keepTab && !keepTab.active) {
+        if (success && wasActive && keepTab && !keepTab.active) {
             setTimeout(async () => {
                 try {
                     await chrome.tabs.update(keepTab.id, { active: true });
@@ -496,6 +523,7 @@ class DuplicateTabManager {
             }
         }));
         
+        // Early detection of duplicate navigation
         chrome.webNavigation.onBeforeNavigate.addListener(Utils.safeHandler(async (details) => {
             if (details.frameId === 0 && details.tabId !== -1 &&
                 !Utils.isBlankURL(details.url) && Utils.shouldProcessURL(details.url)) {
@@ -522,25 +550,21 @@ class DuplicateTabManager {
         });
         
         // BULK OPERATIONS - Use optimized bulk duplicate finder
-        if (chrome.commands) {
-            chrome.commands.onCommand.addListener((command) => {
-                if (command === "close-duplicate-tabs") {
-                    this.closeAllDuplicates().catch(console.error);
-                }
-            });
-        }
-        
         if (chrome.runtime.onStartup) {
-            chrome.runtime.onStartup.addListener(() => {
-                setTimeout(() => this.closeAllDuplicates().catch(console.error), 2000);
-            });
+            chrome.runtime.onStartup.addListener(Utils.safeHandler(() => {
+                setTimeout(() => this.closeAllDuplicates(), 2000);
+            }));
         }
         
         if (chrome.runtime.onInstalled) {
-            chrome.runtime.onInstalled.addListener(() => {
-                setTimeout(() => this.closeAllDuplicates().catch(console.error), 3000);
-            });
+            chrome.runtime.onInstalled.addListener(Utils.safeHandler(() => {
+                setTimeout(() => this.closeAllDuplicates(), 3000);
+            }));
         }
+    }
+    
+    destroy() {
+        this.tracker.destroy();
     }
 }
 
@@ -550,6 +574,13 @@ const duplicateTabManager = new DuplicateTabManager();
 // Logging
 console.log("Optimized duplicate tab closer initialized successfully");
 console.log(`URLPattern support: ${URLPatternHandler.isSupported() ? '✅ Available' : '❌ Using fallback'}`);
+
+// Cleanup handler for extension suspension
+if (chrome.runtime.onSuspend) {
+    chrome.runtime.onSuspend.addListener(() => {
+        duplicateTabManager.destroy();
+    });
+}
 
 // Export for testing (if in Node.js environment)
 if (typeof module !== 'undefined' && module.exports) {
