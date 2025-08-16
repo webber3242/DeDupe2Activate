@@ -18,135 +18,167 @@
     <img src="https://img.shields.io/badge/License-MIT-red?style=flat-square" alt="MIT License">
   </p>
 </div>
+🚀 Features
+Intelligent Duplicate Detection
 
-## 🚀 Features
+Advanced URL Pattern Matching: Uses modern URLPattern API with fallback support for comprehensive duplicate detection
+Subdomain Awareness: Treats www.example.com and example.com as duplicates
+Path Normalization: Handles trailing slashes and path variations intelligently
+Sequential Pattern Checking: Optimized algorithm with early exit when duplicates are found
+Cached Pattern Storage: Efficient LRU cache system with automatic memory management
 
-### Intelligent Duplicate Detection
-- **Advanced URL Pattern Matching**: Uses modern URLPattern API with fallback support for comprehensive duplicate detection
-- **Subdomain Awareness**: Treats www.example.com and example.com as duplicates
-- **Query Parameter Handling**: Configurable inclusion/exclusion of URL parameters
-- **Path Normalization**: Handles trailing slashes and path variations intelligently
-
-### Smart Tab Selection Algorithm
+Smart Tab Selection Algorithm
 The extension uses a sophisticated priority system to determine which tab to keep:
 
-- 🎯 **Active Tab Priority**: Currently active tabs are preferred
-- 🔊 **Audio Playback**: Tabs playing audio are prioritized
-- 📌 **Pinned Status**: Pinned tabs take precedence
-- ⏰ **Load Completion**: More recently loaded tabs are favored
-- 🔢 **Tab Age**: Older tabs win ties (lower tab ID)
+🎯 Active Tab Priority: Currently active tabs are preferred
+🔊 Audio Playback: Tabs playing audio are prioritized
+📌 Pinned Status: Pinned tabs take precedence
+⏰ Load Completion: More recently completed/created tabs are favored
+🔢 Tab Age: Older tabs (lower tab ID) win final ties
 
-### Performance Optimized
-- **Debounced Processing**: Prevents excessive duplicate checks during rapid navigation
-- **Memory Management**: Automatic cleanup of cached data and tracking information
-- **Selective Processing**: Ignores localhost, internal pages, and browser URLs
-- **Pattern Caching**: Efficient URL pattern storage with size limits
+Performance Optimized Architecture
 
-### User Experience
-- **Real-time Processing**: Duplicates are closed as soon as they're detected
-- **Keyboard Shortcut**: Alt+Shift+D to manually close all duplicates
-- **Startup Cleanup**: Automatically removes duplicates when browser starts
-- **Incognito Support**: Works in private browsing mode
+Debounced Processing: Prevents excessive duplicate checks during rapid navigation (300ms default)
+Two-Tier Operation: Optimized single-tab detection for real-time events + bulk operations for startup
+Memory Management: Automatic cleanup with configurable intervals and cache size limits
+Selective Processing: Ignores localhost, internal pages, and browser URLs
+Pattern Caching: LRU cache with configurable size limits (1000 patterns max)
 
-## 📦 Installation
+Advanced Memory Management
 
-### From Chrome Web Store
-1. Visit the Chrome Web Store page (link pending publication)
-2. Click "Add to Chrome"
-3. Confirm installation in the popup dialog
+Enhanced Tab Tracker: Tracks processing states, completion times, and creation timestamps
+Automatic Cleanup: Removes stale data every 60 seconds
+Cache Size Control: Maintains optimal cache size with LRU eviction
+Processing State Tracking: Prevents duplicate processing of the same tab
 
-### Manual Installation (Developer Mode)
-1. Download or clone this repository:
-   ```bash
-   git clone https://github.com/webber3242/DeDupe2Activate.git
-   ```
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the extension folder
-5. The extension will be installed and ready to use
+📦 Installation
+From Chrome Web Store
 
-### Prerequisites
-- Google Chrome version 88+ (for Manifest V3 support)
-- Modern browser with URLPattern API support (recommended)
+Visit the Chrome Web Store page (link pending publication)
+Click "Add to Chrome"
+Confirm installation in the popup dialog
 
-## 🎯 Usage
+Manual Installation (Developer Mode)
 
-### Automatic Operation
+Download or clone this repository:
+bashgit clone https://github.com/webber3242/DeDupe2Activate.git
+
+Open Chrome and navigate to chrome://extensions/
+Enable "Developer mode" in the top right corner
+Click "Load unpacked" and select the extension folder
+The extension will be installed and ready to use
+
+Prerequisites
+
+Google Chrome version 88+ (for Manifest V3 support)
+Modern browser with URLPattern API support (recommended, fallback available)
+
+🎯 Usage
+Automatic Operation
 Once installed, DeDupe2Activate works automatically in the background:
 
-- **New Tab Detection**: When you open a duplicate URL, the extension immediately closes it
-- **Navigation Tracking**: Monitors when existing tabs navigate to duplicate URLs
-- **Background Processing**: Continuously manages duplicates without user intervention
+Real-time Detection: Duplicate tabs are closed immediately upon creation or navigation
+Early Navigation Interception: Catches duplicates before page load completes
+Background Processing: Continuously manages duplicates without user intervention
+Startup Cleanup: Automatically runs bulk cleanup 2-3 seconds after browser/extension start
 
-### Manual Control
-- **Keyboard Shortcut**: Press Alt+Shift+D to instantly close all current duplicates
-- **Startup Cleanup**: Extension automatically runs a cleanup when Chrome starts
+Dual Operation Modes
+Real-time Mode (Single Tab Events)
 
-### What Counts as a Duplicate?
+Uses optimized single-tab duplicate detection
+Processes tabs.onCreated, webNavigation.onBeforeNavigate, and webNavigation.onCompleted
+Sequential pattern matching with early exit for maximum efficiency
+
+Bulk Mode (Manual Cleanup)
+
+Uses parallel processing for all tabs
+Groups tabs by normalized URL keys
+Triggered on startup and extension installation
+
+What Counts as a Duplicate?
 The extension considers URLs duplicates when they have:
-- Same domain (with or without www.)
-- Same path (ignoring trailing slashes)
-- Optional: Same query parameters (configurable)
+
+Same normalized hostname (with or without www.)
+Same normalized path (ignoring trailing slashes)
+Protocol-agnostic matching (http/https)
 
 Examples of detected duplicates:
-- ✅ https://example.com/page
-- ✅ https://www.example.com/page/
-- ✅ http://example.com/page?param=value
 
-## ⚙️ Configuration
+✅ https://example.com/page and https://www.example.com/page/
+✅ http://example.com/path and https://example.com/path
+✅ https://site.com/ and https://site.com
 
-### Customizable Constants
-You can modify these values in `background.js`:
+⚙️ Configuration
+Customizable Constants
+You can modify these values in background.js:
+javascriptconst CONFIG = {
+    DEBOUNCE_DELAY: 300,              // Milliseconds between duplicate checks
+    TAB_REMOVAL_DELAY: 50,            // Delay before activating kept tab
+    CLEANUP_INTERVAL: 60000,          // Memory cleanup frequency (1 minute)
+    IGNORED_DOMAINS: new Set(['localhost', '127.0.0.1', 'chrome-extension']),
+    INCLUDE_QUERY_PARAMS: false,      // Whether to consider query params
+    MAX_CACHE_SIZE: 1000,             // Maximum cached URL patterns
+    CLEANUP_RETENTION_SIZE: 250,      // Patterns to keep after cleanup
+    COMPLETION_TIMEOUT: 300000        // 5 minutes - data retention timeout
+};
+Domain Filtering
+The extension automatically ignores certain domains and can be customized:
+javascriptIGNORED_DOMAINS: new Set([
+    'localhost', 
+    '127.0.0.1', 
+    'chrome-extension',
+    'your-custom-domain.com'  // Add your domains here
+])
+🏗️ Technical Architecture
+Core Components
+URLPatternHandler
 
-```javascript
-const DEBOUNCE_DELAY = 300;          // Milliseconds to wait between duplicate checks
-const TAB_REMOVAL_DELAY = 50;        // Delay before activating kept tab
-const CLEANUP_INTERVAL = 60000;      // Memory cleanup frequency (1 minute)
-const INCLUDE_QUERY_PARAMS = false;  // Whether to consider query params in duplicates
-```
+Handles URL parsing and pattern creation
+Provides URLPattern API support with fallback
+Manages Chrome query patterns for efficient tab searching
+Implements normalized URL key generation for grouping
 
-### Ignored Domains
-The extension automatically ignores certain domains:
-- localhost and 127.0.0.1
-- Chrome extension pages
-- Browser internal pages (chrome://, about:)
+EnhancedTabTracker
 
-To add more ignored domains, modify the IGNORED_DOMAINS set:
+Tracks tab processing states and completion times
+Manages pattern cache with LRU eviction
+Handles memory cleanup and data retention
+Prevents duplicate processing with state tracking
 
-```javascript
-const IGNORED_DOMAINS = new Set(['localhost', '127.0.0.1', 'chrome-extension', 'your-domain.com']);
-```
+DuplicateTabManager
 
-## 🏗️ Technical Architecture
+Orchestrates duplicate detection and removal
+Implements two-tier operation (single-tab + bulk)
+Manages event listeners and error handling
+Provides smart tab selection algorithm
 
-### Core Components
+Utils Module
 
-**URLPatternHandler**
-- Handles URL parsing and pattern matching
-- Provides fallback support for older browsers
-- Manages Chrome query patterns for tab searching
+Debounce functionality with per-tab key tracking
+Safe Chrome API wrappers with error handling
+URL validation and filtering utilities
+Async error handling helpers
 
-**EnhancedTabTracker**
-- Tracks tab states and processing status
-- Manages completion times and creation timestamps
-- Handles pattern caching and memory cleanup
+Event Processing Pipeline
+Single Tab Events (Real-time)
 
-**Event Listeners**
-- `tabs.onCreated`: Monitors new tab creation
-- `webNavigation.onBeforeNavigate`: Catches navigation starts
-- `webNavigation.onCompleted`: Handles completed page loads
-- `commands.onCommand`: Processes keyboard shortcuts
+tabs.onCreated → Mark creation time → Process if complete
+webNavigation.onBeforeNavigate → Early duplicate detection
+webNavigation.onCompleted → Mark completion → Final duplicate check
 
-**Browser API Usage**
-- Tabs API: Query, remove, and update tab properties
-- WebNavigation API: Monitor page navigation events
-- Commands API: Handle keyboard shortcuts
-- Runtime API: Manage extension lifecycle events
+Bulk Operations
 
-## 🛠️ Development
+runtime.onStartup → Bulk cleanup after 2s delay
+runtime.onInstalled → Bulk cleanup after 3s delay
 
-### File Structure
-```
+Browser API Usage
+
+Tabs API: Query patterns, remove duplicates, update active states
+WebNavigation API: Monitor navigation events for early detection
+Runtime API: Handle extension lifecycle and startup events
+
+🛠️ Development
+File Structure
 DeDupe2Activate/
 ├── manifest.json          # Extension configuration
 ├── background.js          # Main service worker logic
@@ -155,59 +187,101 @@ DeDupe2Activate/
 │   ├── icon48.png
 │   └── icon128.png
 └── README.md            # This documentation
-```
+Key Functions
+Single-Tab Operations
 
-### Key Functions
-- `findDuplicates()`: Identifies duplicate tabs for a given URL
-- `selectBestTab()`: Determines which tab to keep using priority algorithm
-- `handleDuplicates()`: Orchestrates the duplicate detection and removal process
-- `closeAllDuplicates()`: Performs bulk duplicate cleanup
+findDuplicatesForSingleTab(): Optimized duplicate detection with pattern caching
+_handleSingleTabDuplicates(): Real-time duplicate processing with debouncing
 
-### Testing
+Bulk Operations
+
+findAllDuplicates(): Parallel processing of all tabs with URL grouping
+closeAllDuplicates(): Bulk duplicate removal with parallel execution
+
+Selection Algorithm
+
+selectBestTab(): Multi-criteria tab selection with priority system
+closeDuplicate(): Safe tab removal with active state management
+
+Performance Optimizations
+
+Sequential Pattern Checking: Early exit when duplicates found
+Pattern Caching: LRU cache prevents repeated URL parsing
+Debounced Processing: Reduces API calls during rapid navigation
+Memory Cleanup: Automatic cleanup prevents memory leaks
+Parallel Execution: Bulk operations use Promise.allSettled
+
+Testing Scenarios
 Test the extension by:
-1. Opening multiple tabs with the same URL
-2. Navigating existing tabs to duplicate URLs
-3. Using the keyboard shortcut Alt+Shift+D
-4. Restarting Chrome to test startup cleanup
 
-## 🤝 Contributing
+Opening multiple tabs with the same URL
+Navigating existing tabs to duplicate URLs
+Testing www vs non-www variations
+Checking http vs https protocol handling
+Restarting Chrome to test startup cleanup
+Testing with pinned, active, and audio-playing tabs
 
-### Getting Started
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and test thoroughly
-4. Commit your changes: `git commit -m 'Add amazing feature'`
-5. Push to the branch: `git push origin feature/amazing-feature`
-6. Open a Pull Request
+🤝 Contributing
+Getting Started
 
-### Development Guidelines
-- Follow existing code style and conventions
-- Add comments for complex logic
-- Test with multiple browser versions
-- Ensure backward compatibility
-- Update documentation for new features
+Fork the repository
+Create a feature branch: git checkout -b feature/amazing-feature
+Make your changes and test thoroughly
+Commit your changes: git commit -m 'Add amazing feature'
+Push to the branch: git push origin feature/amazing-feature
+Open a Pull Request
 
-### Reporting Issues
+Development Guidelines
+
+Follow existing code style and ES2022+ features
+Add JSDoc comments for complex functions
+Test with multiple browser versions and scenarios
+Ensure memory efficiency and proper cleanup
+Update configuration constants as needed
+Test both single-tab and bulk operation modes
+
+Code Quality Standards
+
+Use modern async/await patterns
+Implement proper error handling with safe wrappers
+Follow the established class-based architecture
+Maintain separation between single-tab and bulk operations
+Use consistent naming conventions
+
+Reporting Issues
 Please use the GitHub Issues page to report bugs or request features.
-
 Include:
-- Chrome version
-- Extension version
-- Steps to reproduce
-- Expected vs actual behavior
 
-## 📄 License
+Chrome version
+Extension version
+URLPattern API availability (check console logs)
+Steps to reproduce
+Expected vs actual behavior
+Console error messages (if any)
+
+📊 Performance Metrics
+The extension is designed for optimal performance:
+
+Memory Usage: Auto-cleanup keeps memory footprint minimal
+CPU Impact: Debounced processing reduces background activity
+Cache Efficiency: LRU cache with 1000 pattern capacity
+Response Time: Real-time duplicate detection in <300ms
+Startup Time: 2-3 second delay for bulk cleanup to avoid browser conflicts
+
+📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
+📞 Support
 
-## 📞 Support
-- **GitHub Issues**: Report bugs or request features
-- **Email**: Contact the author for direct support
-- **Wiki**: Check the project wiki for additional documentation
+GitHub Issues: Report bugs or request features
+Email: Contact the author for direct support
+Wiki: Check the project wiki for additional documentation
 
-## 🙏 Acknowledgments
-- Thanks to the Chrome Extensions documentation team
-- Inspired by various tab management tools in the ecosystem
-- Built with modern web APIs and best practices
+🙏 Acknowledgments
+
+Thanks to the Chrome Extensions documentation team
+Inspired by various tab management tools in the ecosystem
+Built with modern web APIs and performance optimization techniques
+Special thanks to the URLPattern API specification contributors
 
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/webber3242">Webber</a></p>
