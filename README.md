@@ -19,55 +19,56 @@
   </p>
 </div>
 
-Why This Extension?
+## Why This Extension?
+
 Ever opened the same webpage in multiple tabs by accident? Or clicked a bookmark only to realize you already had that page open? This extension fixes that annoyance by automatically closing duplicate tabs while being smart about which one to keep.
-Features
-Smart Duplicate Detection
 
-Recognizes when example.com and www.example.com are the same site
-Handles URLs with and without trailing slashes
-Works with both HTTP and HTTPS versions of the same page
-Ignores localhost and browser internal pages
+## Features
 
-Intelligent Tab Selection
+### Smart Duplicate Detection
+- Recognizes when `example.com` and `www.example.com` are the same site
+- Handles URLs with and without trailing slashes
+- Works with both HTTP and HTTPS versions of the same page
+- Ignores localhost and browser internal pages
+
+### Intelligent Tab Selection
 When duplicates are found, the extension keeps the "best" tab based on:
+- 🎯 Active tab (the one you're currently viewing)
+- 🔊 Playing audio (don't close that music!)
+- 📌 Pinned tabs
+- ⏰ Most recently loaded
+- Oldest tab (as a tiebreaker)
 
-🎯 Active tab (the one you're currently viewing)
-🔊 Playing audio (don't close that music!)
-📌 Pinned tabs
-⏰ Most recently loaded
-Oldest tab (as a tiebreaker)
+### Performance Features
+- Processes duplicates instantly when you open them
+- Catches duplicates before pages even finish loading  
+- Cleans up existing duplicates when Chrome starts
+- Uses smart caching to avoid slowing down your browser
 
-Performance Features
+## 📦 Installation
 
-Processes duplicates instantly when you open them
-Catches duplicates before pages even finish loading
-Cleans up existing duplicates when Chrome starts
-Uses smart caching to avoid slowing down your browser
-
-📦 Installation
-From Chrome Web Store:
+**From Chrome Web Store:**
 Coming soon - link will be added once published.
-Manual Installation:
 
-Download this repo or clone it: git clone https://github.com/webber3242/DeDupe2Activate.git
-Go to chrome://extensions/
-Turn on "Developer mode" (top right)
-Click "Load unpacked" and select the extension folder
+**Manual Installation:**
+1. Download this repo or clone it: `git clone https://github.com/webber3242/DeDupe2Activate.git`
+2. Go to `chrome://extensions/`
+3. Turn on "Developer mode" (top right)
+4. Click "Load unpacked" and select the extension folder
 
 Works with Chrome 88+ (needs Manifest V3 support).
-How It Works
+
+## How It Works
+
 Once installed, it just runs in the background. No setup needed.
-Real-time duplicate closing:
 
-Open a duplicate tab → it closes immediately
-Navigate to a duplicate URL → closes the duplicate
-The extension figures out which tab to keep automatically
+**Real-time duplicate closing:**
+- Open a duplicate tab → it closes immediately
+- Navigate to a duplicate URL → closes the duplicate
+- The extension figures out which tab to keep automatically
 
-Startup cleanup:
-
-When Chrome starts, it scans for any existing duplicates and cleans them up
-
+**Startup cleanup:**
+- When Chrome starts, it scans for any existing duplicates and cleans them up
 
 ## ⚙️ Configuration
 
