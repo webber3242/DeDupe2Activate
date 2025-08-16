@@ -141,15 +141,6 @@ DeDupe2Activate/
 - `selectBestTab()` - Decides which tab to keep
 - `closeDuplicate()` - Safely removes a duplicate tab
 
-### Testing
-Try these scenarios:
-1. Open multiple tabs to the same URL
-2. Navigate existing tabs to URLs that are already open
-3. Test with www vs non-www versions
-4. Try http vs https
-5. Test with pinned tabs, active tabs, tabs playing audio
-6. Restart Chrome to test startup cleanup
-
 ## Contributing
 
 Found a bug or want to add a feature?
