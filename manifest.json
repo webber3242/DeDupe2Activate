@@ -6,7 +6,7 @@
   "description": "Automatically closes duplicate tabs, Activate Remaining Tab",
   "permissions": [
     "tabs",
-    "webNavigation",
+    "webNavigation"
   ],
   "background": {
     "service_worker": "background.js"
