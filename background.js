@@ -69,54 +69,40 @@ const stopMemoryMonitoring = () => {
 const isTabComplete = tab => tab?.status === "complete";
 const isBlankURL = url => !url || url === "about:blank" || url === "chrome://newtab/";
 
-// Improved match pattern creation following Chrome's best practices
-const getMatchPatternURL = (url) => {
-    if (!url || typeof url !== 'string') return null;
-    
-    try {
-        const urlObj = new URL(url);
-        const { protocol, hostname, pathname } = urlObj;
-        
-        // Handle different schemes according to match pattern rules
-        switch (protocol) {
-            case 'http:':
-            case 'https:':
-                // Use wildcard scheme for better flexibility: *://hostname/path*
-                return `*://${hostname}${pathname === '/' ? '/*' : pathname + '*'}`;
-            case 'file:':
-                // File URLs need special handling - use file:/// pattern
-                return `file:///*`;
-            default:
-                // For chrome://, about:, etc. - use exact pattern with wildcard
-                if (protocol.startsWith('chrome:') || protocol.startsWith('about:')) {
-                    return `${protocol}//${hostname}${pathname}*`;
-                }
-                return null;
-        }
-    } catch (error) {
-        console.warn("Match pattern creation failed:", error.message);
-        return null;
-    }
+// Use the working URL matching logic from paste-2.txt
+const isValidURL = (url) => {
+    const regex = /^(f|ht)tps?:\/\//i;
+    return regex.test(url);
 };
 
 const getMatchingURL = (url) => {
-    if (!url || typeof url !== 'string') return url;
-    
-    try {
-        const urlObj = new URL(url);
-        // Normalize URL for comparison - remove fragments and query params for matching
-        let normalizedURL = `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}`;
-        
-        // Remove trailing slash for consistency, except for root
-        if (urlObj.pathname !== '/' && normalizedURL.endsWith('/')) {
-            normalizedURL = normalizedURL.slice(0, -1);
+    if (!isValidURL(url)) return url;
+
+    let matchingURL = url;
+    // Always upgrade to https
+    matchingURL = matchingURL.replace(/^http:\/\//i, "https://");
+    // Always strip "www."
+    matchingURL = matchingURL.replace("://www.", "://");
+    // Always lowercase
+    matchingURL = matchingURL.toLowerCase();
+    // Always strip trailing slash
+    matchingURL = matchingURL.replace(/\/$/, "");
+
+    return matchingURL;
+};
+
+const getMatchPatternURL = (url) => {
+    if (isValidURL(url)) {
+        const uri = new URL(url);
+        let urlPattern = `*://${uri.hostname}${uri.pathname}`;
+        if (uri.search || uri.hash) {
+            urlPattern += "*";
         }
-        
-        return normalizedURL.toLowerCase();
-    } catch (error) {
-        console.warn("URL normalization failed:", error.message);
-        return url;
+        return urlPattern;
+    } else if (url.startsWith("about:") || url.startsWith("chrome://")) {
+        return `${url}*`;
     }
+    return null;
 };
 
 // ===== CHROME API WRAPPER FUNCTIONS WITH BETTER ERROR HANDLING =====
@@ -361,30 +347,16 @@ class TabsInfo {
 // ===== GLOBAL INSTANCE =====
 const tabsInfo = new TabsInfo();
 
-// ===== DUPLICATE TAB LOGIC WITH IMPROVED ERROR HANDLING =====
-const getLastUpdatedTabId = (observedTab, openedTab) => {
+// ===== DUPLICATE TAB LOGIC WITH CORRECTED FOCUS BEHAVIOR =====
+const getOlderTabId = (observedTab, openedTab) => {
     const observedTabLastUpdate = tabsInfo.getLastComplete(observedTab.id);
     const openedTabLastUpdate = tabsInfo.getLastComplete(openedTab.id);
     
     if (observedTabLastUpdate === null) return openedTab.id;
     if (openedTabLastUpdate === null) return observedTab.id;
+    
+    // Keep older tab (smaller timestamp)
     return (observedTabLastUpdate < openedTabLastUpdate) ? observedTab.id : openedTab.id;
-};
-
-const getFocusedTab = (observedTab, openedTab, activeWindow, retainedTabId) => {
-    if (!observedTab || !openedTab || !activeWindow) return retainedTabId;
-    
-    const activeWindowId = activeWindow.id;
-    
-    if (retainedTabId === observedTab.id) {
-        return ((openedTab.windowId === activeWindowId) && 
-                (openedTab.active || (observedTab.windowId !== activeWindowId))) 
-                ? openedTab.id : observedTab.id;
-    } else {
-        return ((observedTab.windowId === activeWindowId) && 
-                (observedTab.active || (openedTab.windowId !== activeWindowId))) 
-                ? observedTab.id : openedTab.id;
-    }
 };
 
 const getCloseInfo = (eventData) => {
@@ -394,24 +366,30 @@ const getCloseInfo = (eventData) => {
         throw new Error("Invalid tab data provided to getCloseInfo");
     }
     
-    let retainedTabId = getLastUpdatedTabId(observedTab, openedTab);
-    if (activeWindow) {
-        retainedTabId = getFocusedTab(observedTab, openedTab, activeWindow, retainedTabId);
+    // Always keep active tab if one exists
+    if (observedTab.active) {
+        return [openedTab.id, {
+            keptTab: observedTab,
+            closedTabId: openedTab.id
+        }];
+    } else if (openedTab.active) {
+        return [observedTab.id, {
+            keptTab: openedTab,
+            closedTabId: observedTab.id
+        }];
     }
     
-    if (retainedTabId === observedTab.id) {
+    // Otherwise keep older tab
+    const olderTabId = getOlderTabId(observedTab, openedTab);
+    if (olderTabId === observedTab.id) {
         return [openedTab.id, {
-            observedTabClosed: false,
-            active: openedTab.active,
-            tabId: observedTab.id,
-            windowId: observedTab.windowId
+            keptTab: observedTab,
+            closedTabId: openedTab.id
         }];
     } else {
         return [observedTab.id, {
-            observedTabClosed: true,
-            active: observedTab.active,
-            tabId: openedTab.id,
-            windowId: openedTab.windowId
+            keptTab: openedTab,
+            closedTabId: observedTab.id
         }];
     }
 };
@@ -437,86 +415,80 @@ const searchForDuplicateTabsToClose = async (observedTab, queryComplete = false,
     await tabsInfo.waitForInitialization();
     
     const observedTabUrl = loadingUrl || observedTab.url;
-    const matchPattern = getMatchPatternURL(observedTabUrl);
     
-    if (!matchPattern) {
-        console.debug("No valid match pattern for URL:", observedTabUrl);
+    // Skip blank URLs and ignored tabs
+    if (isBlankURL(observedTabUrl) || tabsInfo.isIgnoredTab(observedTab.id)) {
         return;
     }
-    
-    const queryInfo = { url: matchPattern };
-    if (queryComplete) queryInfo.status = "complete";
-    
+
+    const queryInfo = {
+        status: queryComplete ? "complete" : null,
+        url: getMatchPatternURL(observedTabUrl)
+    };
+
+    // Try to search all windows first, fallback to current window
+    let openedTabs;
     try {
-        const [openedTabs, activeWindow] = await Promise.all([
-            getTabs(queryInfo),
-            getActiveWindow()
-        ]);
-        
-        if (!openedTabs || openedTabs.length <= 1) return;
-        
+        openedTabs = await getTabs(queryInfo);
+    } catch (ex) {
+        // Fallback to current window if all windows search fails
+        queryInfo.windowId = observedTab.windowId;
+        openedTabs = await getTabs(queryInfo);
+    }
+
+    if (openedTabs.length > 1) {
         const matchingObservedTabUrl = getMatchingURL(observedTabUrl);
+        const activeWindow = await getActiveWindow();
         
         for (const openedTab of openedTabs) {
-            if (!openedTab?.id || 
-                openedTab.id === observedTab.id || 
+            // Skip self, ignored tabs, and blank tabs
+            if ((openedTab.id === observedTab.id) || 
                 tabsInfo.isIgnoredTab(openedTab.id) || 
-                tabsInfo.isNavigating(openedTab.id) ||
                 (isBlankURL(openedTab.url) && !isTabComplete(openedTab))) {
                 continue;
             }
             
+            // Compare URLs only (no title comparison per rules)
             if (getMatchingURL(openedTab.url) === matchingObservedTabUrl) {
                 try {
-                    const [tabToCloseId, remainingTabInfo] = getCloseInfo({ 
-                        observedTab, 
-                        observedTabUrl, 
-                        openedTab,
-                        activeWindow
+                    const [tabToCloseId, keepInfo] = getCloseInfo({
+                        observedTab: observedTab,
+                        openedTab: openedTab,
+                        activeWindow: activeWindow
                     });
                     
-                    await closeDuplicateTab(tabToCloseId, remainingTabInfo);
-                    if (remainingTabInfo.observedTabClosed) break;
+                    await closeDuplicateTab(tabToCloseId, keepInfo);
+                    
+                    // If we closed the observed tab, stop processing
+                    if (tabToCloseId === observedTab.id) {
+                        break;
+                    }
                 } catch (error) {
                     console.error("Error processing duplicate tab:", error.message);
                 }
             }
         }
-    } catch (error) {
-        console.error("searchForDuplicateTabsToClose failed:", error.message);
     }
 };
 
-const closeDuplicateTab = async (tabToCloseId, remainingTabInfo) => {
-    if (!tabToCloseId || !remainingTabInfo) return;
+const closeDuplicateTab = async (tabToCloseId, keepInfo) => {
+    if (!tabToCloseId || !keepInfo) return;
     
     try {
         tabsInfo.ignoreTab(tabToCloseId, true);
         await removeTab(tabToCloseId);
         console.log(`Closed duplicate tab: ${tabToCloseId}`);
+        
+        // CRITICAL FIX: Always focus the kept tab after closing duplicate
+        // This is what was missing in the enhanced version!
+        await focusTab(keepInfo.keptTab.id, keepInfo.keptTab.windowId);
+        
     } catch (error) {
         console.debug("Failed to close tab:", tabToCloseId, error.message);
         tabsInfo.ignoreTab(tabToCloseId, false);
         return;
     }
-    
-    // Handle remaining tab focus
-    if (remainingTabInfo.active) {
-        handleRemainingTab(remainingTabInfo.windowId, remainingTabInfo);
-    }
 };
-
-const _handleRemainingTab = async (eventData) => {
-    if (!eventData?.tabId || !tabsInfo.hasTab(eventData.tabId)) return;
-    
-    try {
-        await focusTab(eventData.tabId, eventData.windowId);
-    } catch (error) {
-        console.debug("Failed to focus remaining tab:", error.message);
-    }
-};
-
-const handleRemainingTab = debounce(_handleRemainingTab, 300);
 
 // ===== MAIN DUPLICATE SEARCH FUNCTION =====
 const searchForDuplicateTabs = async (windowId = null, closeTabs = false) => {
@@ -561,7 +533,7 @@ const searchForDuplicateTabs = async (windowId = null, closeTabs = false) => {
             } else {
                 if (closeTabs) {
                     try {
-                        const [tabToCloseId] = getCloseInfo({ 
+                        const [tabToCloseId, keepInfo] = getCloseInfo({ 
                             observedTab: openedTab, 
                             openedTab: retainedTab, 
                             activeWindow 
@@ -605,8 +577,6 @@ const closeDuplicateTabs = (windowId = null) => {
 };
 
 // ===== WEBNAVIGATION EVENT HANDLERS WITH FILTERED EVENTS =====
-// Using filters as recommended in the chrome.events documentation for better performance
-
 const onBeforeNavigate = async (details) => {
     // Only handle main frame navigations (frameId === 0)
     if (details.frameId !== 0 || 
@@ -620,6 +590,13 @@ const onBeforeNavigate = async (details) => {
     tabsInfo.setNavigationState(details.tabId, true, details.url, details.documentId);
     
     console.debug("Navigation started:", details.tabId, details.url);
+    
+    // Reset tab and search for duplicates with loading URL
+    const tab = await getTab(details.tabId);
+    if (tab) {
+        tabsInfo.resetTab(tab.id);
+        searchForDuplicateTabsToClose(tab, true, details.url);
+    }
 };
 
 const onCommitted = async (details) => {
@@ -839,9 +816,6 @@ const handleMessage = (message, sender, sendResponse) => {
 };
 
 // ===== SERVICE WORKER EVENT LISTENERS WITH FILTERS =====
-// These must be declared at the top level for proper service worker behavior
-// Using filtered events as recommended in chrome.events documentation for better performance
-
 // Enhanced WebNavigation events with URL filters for better performance
 chrome.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate, {
     url: [
