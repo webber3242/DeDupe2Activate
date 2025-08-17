@@ -1,309 +1,320 @@
 <div align="center">
   <img src="images/icon128.png" alt="DeDupe2Activate Logo" width="128" height="128">
-  <h3>Advanced Chrome Extension for Intelligent Duplicate Tab Management</h3>
+  <h3>Enterprise-Grade Chrome Extension for Intelligent Duplicate Tab Management</h3>
   <p>
-    <strong>DeDupe2Activate</strong> automatically detects and closes duplicate tabs with memory-aware processing, enhanced navigation tracking, and system performance optimization.
+    <strong>DeDupe2Activate</strong> automatically detects and closes duplicate tabs using advanced memory monitoring, smart tab retention logic, and performance-optimized duplicate detection algorithms.
   </p>
   <p>
     <a href="#features"><strong>Features</strong></a> •
     <a href="#installation"><strong>Installation</strong></a> •
-    <a href="#usage"><strong>Usage</strong></a> •
+    <a href="#how-it-works"><strong>How It Works</strong></a> •
     <a href="#configuration"><strong>Configuration</strong></a> •
+    <a href="#technical-architecture"><strong>Technical Architecture</strong></a> •
     <a href="#contributing"><strong>Contributing</strong></a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/Chrome-Extension-blue?style=flat-square&logo=google-chrome" alt="Chrome Extension">
     <img src="https://img.shields.io/badge/Manifest-V3-green?style=flat-square" alt="Manifest V3">
     <img src="https://img.shields.io/badge/JavaScript-ES2022-yellow?style=flat-square&logo=javascript" alt="JavaScript ES2022">
+    <img src="https://img.shields.io/badge/Memory-Optimized-purple?style=flat-square" alt="Memory Optimized">
     <img src="https://img.shields.io/badge/License-MIT-red?style=flat-square" alt="MIT License">
   </p>
 </div>
+Why This Extension?
+DeDupe2Activate goes beyond simple URL comparison. It uses enterprise-grade algorithms to intelligently manage duplicate tabs while monitoring system resources to prevent browser slowdowns. Whether you accidentally open the same page multiple times or work with hundreds of tabs, this extension keeps your browser clean and fast.
+Features
+🧠 Advanced Duplicate Detection
 
-## Why This Extension?
+Smart URL Normalization: Recognizes example.com, www.example.com, https://example.com/, and http://example.com as identical
+Protocol Agnostic Matching: Uses Chrome's match pattern system with wildcard schemes (*://)
+Fragment & Query Handling: Treats page.html#section1 and page.html#section2 as the same page
+File URL Support: Handles local file duplicates with file:// protocol
+Chrome Internal Pages: Manages duplicates of chrome:// pages and extensions
+Case-Insensitive Comparison: Handles URL case variations automatically
 
-Ever opened the same webpage in multiple tabs by accident? Or clicked a bookmark only to realize you already had that page open? This extension fixes that annoyance by automatically closing duplicate tabs while being smart about which one to keep - all while monitoring system resources to prevent browser slowdown.
+🎯 Intelligent Tab Retention Logic
+When duplicates are found, keeps the most relevant tab based on priority:
 
-## Features
+🎯 Active Tab: Currently focused tab gets highest priority
+🖥️ Window Focus: Tabs in the active window are preferred
+⏰ Recently Loaded: Most recently completed page loads are retained
+📍 Navigation State: Tabs currently navigating are protected from premature closure
+🔒 System Priority: Considers tab lifecycle and browser focus state
 
-### 🧠 Enhanced Smart Duplicate Detection
-- Recognizes when `example.com` and `www.example.com` are the same site
-- Advanced URL pattern matching with Chrome's native URLPattern API
-- Handles URLs with and without trailing slashes, fragments, and query parameters
-- Works with HTTP, HTTPS, file://, and chrome:// URLs
-- Normalizes URLs for accurate comparison and caching
-- Ignores localhost and browser internal pages
+⚡ Performance Optimizations
 
-### 🎯 Intelligent Tab Selection
-When duplicates are found, the extension keeps the "best" tab based on:
-- 🎯 Active tab (the one you're currently viewing)
-- 🔊 Playing audio 
-- 📌 Pinned tabs
-- ⏰ Most recently loaded
-- 🕒 Oldest tab
-- 🪟 Window focus priority
+💾 Memory Monitoring: Automatically monitors system memory and reduces operations when memory is low (<10% available)
+⚡ Debounced Processing: 300ms debounce prevents excessive duplicate checks during rapid navigation
+🚀 Event Filtering: Uses Chrome's URL filters to only process relevant navigation events
+📋 Sequential Checking: Early exit optimization stops checking once duplicates are found
+🔄 Service Worker Lifecycle: Proper suspend/resume handling for Chrome's service worker model
+🧹 Automatic Cleanup: Removes tracking data for closed tabs to prevent memory leaks
 
-### ⚡ Performance Optimizations
-- **Memory-Aware Processing**: Monitors system memory and pauses aggressive checking when memory is low (< 10% available)
-- **Navigation State Tracking**: Prevents premature duplicate detection during page loading
-- **Enhanced Service Worker**: Optimized event handling with URL filters for better performance
-- **Debounced Operations**: Prevents excessive duplicate checks during rapid tab changes
-- **Pattern Caching**: Caches URL patterns with LRU eviction for faster processing
+🌐 Comprehensive Event Handling
 
-### 🔍 Advanced Navigation Tracking
-- **Real-time Navigation Monitoring**: Tracks tab navigation states to prevent conflicts
-- **Document ID Tracking**: Uses Chrome's documentId for precise navigation tracking
-- **Multi-frame Support**: Handles main frame navigations while ignoring sub-frames
-- **History API Support**: Detects pushState/replaceState navigation changes
-- **Error Handling**: Gracefully handles navigation errors and timeouts
+Navigation Tracking: Full WebNavigation API integration with filtered events
+Real-time Detection: Instant duplicate closure as soon as pages load
+SPA Support: Handles single-page application navigation via History API
+Tab Lifecycle: Tracks tab creation, updates, attachment, and removal
+Error Handling: Graceful handling of navigation errors and tab failures
 
-## 📦 Installation
-
-**From Chrome Web Store:**
+📦 Installation
+From Chrome Web Store:
 Coming soon - link will be added once published.
+Manual Installation:
 
-**Manual Installation:**
-1. Download this repo or clone it: `git clone https://github.com/webber3242/DeDupe2Activate.git`
-2. Go to `chrome://extensions/`
-3. Turn on "Developer mode" (top right)
-4. Click "Load unpacked" and select the extension folder
+Download this repo or clone it: git clone https://github.com/webber3242/DeDupe2Activate.git
+Go to chrome://extensions/
+Turn on "Developer mode" (top right)
+Click "Load unpacked" and select the extension folder
 
-**System Requirements:**
-- Chrome 88+ (requires Manifest V3 support)
-- System Memory API support (optional, for memory monitoring)
+System Requirements:
 
-## How It Works
+Chrome 88+ (Manifest V3 support required)
+System Memory API support (optional, for memory monitoring)
 
-### Real-time Duplicate Management
-- **Enhanced Tab Creation**: Immediately tracks new tabs with creation timestamps
-- **Navigation Awareness**: Monitors page loading states to prevent premature closure
-- **Smart URL Matching**: Uses advanced pattern matching for accurate duplicate detection
-- **Memory Protection**: Automatically reduces activity when system memory is low
+How It Works
+Real-time Duplicate Management
+The extension operates continuously in the background using Chrome's service worker architecture:
+Automatic Detection:
 
-### Manual Operations
-- **Bulk Cleanup**: Click the extension icon to scan and close all current duplicates
-- **Window-Specific**: Target specific windows for duplicate cleanup
-- **Memory Status**: Check current system memory usage through the extension
+Monitors all tab creation and navigation events
+Uses WebNavigation API with URL filters for optimal performance
+Applies smart URL normalization to detect duplicates across different formats
+Protects tabs that are currently loading from premature closure
 
-### Startup & Lifecycle
-- **Browser Startup**: Automatically scans for duplicates when Chrome starts (with 5-second delay for stability)
-- **Extension Install/Update**: Runs initial cleanup after installation or updates
-- **Service Worker Management**: Handles suspend/resume cycles for optimal resource usage
+Smart Closure:
 
-## ⚙️ Configuration
+Analyzes tab priority using focus state, window position, and load times
+Closes the less relevant duplicate while preserving user context
+Handles cross-window scenarios intelligently
+Maintains browser responsiveness through debounced processing
 
-You can customize the extension by editing the configuration constants in `background.js`:
+Memory Protection:
 
-### Memory Management
-```javascript
-// Memory monitoring settings
-const updateMemoryInfo = async () => {
-    // Pause operations when memory usage > 90%
-    const memoryUsageRatio = (capacity - availableCapacity) / capacity;
-    if (memoryUsageRatio > 0.9) {
-        console.warn("Low memory detected, pausing aggressive duplicate checking");
-        return false;
-    }
-    return true;
-};
-```
+Continuously monitors available system memory (when supported)
+Automatically reduces aggressive duplicate checking when memory is low
+Prevents browser slowdowns during high tab usage
 
-### Navigation Tracking
-```javascript
-// Enhanced navigation state management
-class TabsInfo {
-    setNavigationState(tabId, isNavigating, pendingUrl = null, documentId = null) {
-        // Prevents duplicate detection during navigation
-        const state = { isNavigating, pendingUrl, documentId };
-        this.navigationStates.set(tabId, state);
-    }
-}
-```
+Manual Operations
 
-### URL Pattern Matching
-```javascript
-const getMatchPatternURL = (url) => {
-    // Enhanced pattern creation for different URL schemes
-    switch (protocol) {
-        case 'http:':
-        case 'https:':
-            return `*://${hostname}${pathname === '/' ? '/*' : pathname + '*'}`;
-        case 'file:':
-            return `file:///*`;
-        default:
-            if (protocol.startsWith('chrome:')) {
-                return `${protocol}//${hostname}${pathname}*`;
-            }
-    }
-};
-```
+Extension Icon Click: Triggers immediate cleanup of all current duplicates
+Startup Cleanup: Automatically scans and closes duplicates when Chrome starts (5-second delay)
+Installation Cleanup: Runs initial cleanup after install/update (3.5-second delay)
 
-### Performance Tuning
-```javascript
-// Timing configurations
-const DEBOUNCE_DELAY = 300;           // Debounce delay for duplicate checks
-const TAB_REMOVAL_DELAY = 50;         // Focus delay after tab closure
-const MEMORY_CHECK_INTERVAL = 30000;  // Memory monitoring frequency
-const STARTUP_CLEANUP_DELAY = 5000;   // Startup cleanup delay
-```
-
-## 🔧 Technical Architecture
-
-### Core Components
-
-**Enhanced TabsInfo Class**
-- Tracks tab lifecycle with creation timestamps and navigation counts
-- Monitors navigation states to prevent premature duplicate detection
-- Maintains ignored tabs set and document ID tracking
-- Handles tab attachment/detachment events
-
-**Advanced URL Processing**
-- Native URLPattern API integration with fallback support
-- Comprehensive scheme handling (http/https/file/chrome)
-- URL normalization for consistent comparison
-- Match pattern caching for performance
-
-**Memory-Aware Processing**
-- System Memory API integration for resource monitoring
-- Automatic activity reduction during low memory conditions
-- Memory check intervals with configurable thresholds
-- Service worker suspend/resume handling
-
-**Intelligent Event Handling**
-- Filtered WebNavigation events for better performance
-- Enhanced tab creation and update processing
-- Document ID tracking for precise navigation monitoring
-- History API and fragment update support
-
-### Event Processing Pipeline
-
-1. **Tab Creation**: Immediate tracking with metadata initialization
-2. **Navigation Start**: Mark navigation state, prevent duplicate checks
-3. **Navigation Commit**: Initial duplicate detection after URL commitment
-4. **Navigation Complete**: Final duplicate check after full page load
-5. **Tab Removal**: Cleanup tracking data and ignored tab sets
-
-### Performance Optimizations
-
-- **URL Filters**: WebNavigation events use URL scheme filters
-- **Debounced Operations**: Prevents excessive API calls during rapid changes
-- **Sequential Processing**: Early exit when duplicates are found
-- **Parallel Bulk Operations**: Efficient processing for manual cleanup
-- **Memory Monitoring**: Automatic throttling based on system resources
-
-### File Structure
-```
+File Structure
 DeDupe2Activate/
-├── manifest.json         # Extension configuration
-├── background.js         # Enhanced service worker with all logic
-├── images/              # Extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md            # This file
-```
+├── manifest.json          # Extension configuration and permissions
+├── background.js          # Main service worker with all logic
+├── images/               # Extension icons
+│   ├── icon16.png       # Toolbar icon
+│   ├── icon48.png       # Extension management
+│   └── icon128.png      # Chrome Web Store
+└── README.md            # This documentation
+⚙️ Configuration
+The extension is highly configurable through the background.js file. Key settings include:
+Performance Settings
+javascript// Event processing timing
+DEBOUNCE_DELAY: 300,              // Milliseconds between duplicate checks
+TAB_REMOVAL_DELAY: 50,            // Delay before focusing remaining tab
 
-## 🛠️ API Integration
+// Memory management  
+MEMORY_CHECK_INTERVAL: 30000,     // Memory monitoring frequency (30 seconds)
+LOW_MEMORY_THRESHOLD: 0.9,        // Stop aggressive checking at 90% memory usage
 
-### Chrome APIs Used
-- **chrome.tabs**: Tab management and querying
-- **chrome.webNavigation**: Enhanced navigation tracking with filters
-- **chrome.windows**: Window focus management
-- **chrome.action**: Extension toolbar interaction
-- **chrome.runtime**: Lifecycle and messaging
-- **chrome.system.memory**: System resource monitoring (optional)
+// Startup behavior
+INITIAL_CLEANUP_DELAY: 3500,      // Delay after install/update (3.5 seconds) 
+STARTUP_CLEANUP_DELAY: 5000,      // Delay after browser startup (5 seconds)
+URL Handling
+javascript// Supported URL schemes
+SUPPORTED_SCHEMES: ['http', 'https', 'file', 'chrome'],
 
-### Event Listeners with Filters
-```javascript
-// Performance-optimized event filtering
-chrome.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate, {
+// Domains to ignore (never process for duplicates)
+IGNORED_DOMAINS: [
+    'localhost',
+    '127.0.0.1', 
+    'chrome-extension',
+    // Add custom domains here
+]
+Adding Custom Ignored Domains
+javascript// In background.js, modify the URL filtering logic:
+const shouldIgnoreDomain = (url) => {
+    const ignoredDomains = [
+        'localhost',
+        '127.0.0.1',
+        'chrome-extension',
+        'internal-tool.company.com',    // Your custom domains
+        'dev.local'
+    ];
+    
+    try {
+        const hostname = new URL(url).hostname;
+        return ignoredDomains.some(domain => hostname.includes(domain));
+    } catch (error) {
+        return true; // Ignore malformed URLs
+    }
+};
+Technical Architecture
+Core Components
+TabsInfo Class
+
+Maintains state for all open tabs with creation times, URLs, and completion status
+Tracks navigation states to prevent premature duplicate detection
+Implements automatic cleanup of closed tab data
+Provides fast tab lookup and duplicate detection support
+
+Memory Management System
+
+Real-time system memory monitoring using Chrome's System API
+Automatic operation throttling when available memory drops below 10%
+Service worker lifecycle management with proper suspend/resume handling
+Memory leak prevention through automatic cleanup of tracking data
+
+URL Pattern Handler
+
+Advanced URL normalization using Chrome's match pattern system
+Protocol-agnostic duplicate detection with wildcard scheme support
+Fragment and query parameter normalization for accurate matching
+File URL and Chrome internal page support
+
+Enhanced Event Processing
+
+WebNavigation API integration with URL filters for optimal performance
+Debounced event handling to prevent excessive processing
+Sequential duplicate checking with early exit optimization
+Error handling and recovery for navigation failures
+
+Event Flow
+mermaidgraph TD
+    A[Tab Created/Navigation] --> B{URL Filtering}
+    B -->|Pass| C[Debounced Processing]
+    B -->|Fail| D[Ignore]
+    C --> E[Memory Check]
+    E -->|Low Memory| F[Throttle]
+    E -->|Normal| G[Duplicate Detection]
+    G --> H{Duplicates Found?}
+    H -->|Yes| I[Tab Priority Analysis]
+    H -->|No| J[Continue Monitoring]
+    I --> K[Close Duplicate]
+    K --> L[Focus Remaining Tab]
+Performance Optimizations
+Event Filtering: Uses Chrome's native URL filters to process only relevant events:
+javascriptchrome.webNavigation.onCompleted.addListener(handler, {
     url: [
         { schemes: ['http', 'https'] },
         { schemes: ['file'] },
         { urlPrefix: 'chrome://' }
     ]
 });
-```
-
-### Error Handling Strategy
-- Graceful degradation when APIs are unavailable
-- Comprehensive promise error handling
-- Invalid tab ID protection
-- Service worker lifecycle management
-- Memory API fallback for unsupported systems
-
-## 🔍 Development Features
-
-### Enhanced Debugging
-- Detailed console logging with categorized messages
-- Navigation state tracking for troubleshooting
-- Memory usage reporting and monitoring
-- Performance timing for optimization analysis
-
-### Testing Capabilities
-- Modular function exports for unit testing
-- Memory simulation for low-resource testing
-- Navigation state mocking for edge cases
-- Bulk operation performance testing
-
-### Message API
-```javascript
-// Extension messaging for external integration
+Debounced Processing: Prevents excessive duplicate checks during rapid navigation:
+javascriptconst debouncedHandler = debounce(duplicateHandler, 300);
+Memory-Aware Operations: Automatically reduces processing when system memory is low:
+javascriptconst canProceed = await updateMemoryInfo();
+if (!canProceed && isAggressiveOperation) {
+    console.warn("Reducing operations due to low memory");
+    return;
+}
+API Reference
+Message Handling
+The extension supports several message types for programmatic interaction:
+javascript// Close duplicate tabs
 chrome.runtime.sendMessage({
     action: "closeDuplicateTabs",
-    data: { windowId: null }
-}, response => {
-    console.log("Closed tabs:", response.closedCount);
+    data: { windowId: null } // null = all windows
 });
-```
 
-## Contributing
+// Get duplicate information without closing
+chrome.runtime.sendMessage({
+    action: "getDuplicateTabs", 
+    data: { windowId: 123 }
+});
 
+// Get memory information
+chrome.runtime.sendMessage({
+    action: "getMemoryInfo"
+});
+Key Functions
+Core Duplicate Detection:
+
+searchForDuplicateTabsToClose() - Real-time duplicate detection for single tabs
+searchForDuplicateTabs() - Bulk duplicate detection for all tabs
+closeDuplicateTabs() - Manual cleanup of all current duplicates
+
+URL Processing:
+
+getMatchPatternURL() - Creates Chrome match patterns from URLs
+getMatchingURL() - Normalizes URLs for comparison
+
+Tab Management:
+
+getCloseInfo() - Determines which tab to keep vs close
+focusTab() - Safely focuses remaining tab after duplicate closure
+
+🛠️ Development
+Event Debugging
+Enable debug logging by checking the service worker console:
+
+Go to chrome://extensions/
+Click "Service worker" under your extension
+Monitor console output for event processing
+
+Testing Performance
+The extension includes built-in performance monitoring:
+
+Memory usage tracking
+Event processing timing
+Duplicate detection efficiency metrics
+Service worker lifecycle logging
+
+Common Issues
+High Memory Usage: The extension automatically throttles operations when system memory is low. If you experience issues:
+
+Check the service worker console for memory warnings
+Reduce the number of open tabs
+Restart Chrome to reset service worker state
+
+Navigation Conflicts: If duplicates aren't being detected:
+
+Ensure the URLs are actually identical after normalization
+Check if domains are in the ignored list
+Verify WebNavigation events are firing (check console)
+
+Contributing
 Found a bug or want to add a feature?
-1. Fork the repo
-2. Make your changes
-3. Test thoroughly (especially with memory constraints and many tabs)
-4. Submit a pull request
 
-When reporting issues, include:
-- Your Chrome version and system specs
-- Number of open tabs when issue occurred
-- System memory status during the issue
-- Steps to reproduce the problem
-- Browser console errors (if any)
-- Expected vs actual behavior
+Fork the repository
+Create a feature branch: git checkout -b feature/amazing-feature
+Make your changes with comprehensive testing
+Test thoroughly, especially:
 
-### Development Guidelines
-- Maintain memory-aware processing patterns
-- Use filtered event listeners for performance
-- Include comprehensive error handling
-- Test with various URL schemes and patterns
-- Verify service worker lifecycle compatibility
+Performance with 100+ tabs
+Memory usage during heavy operation
+Service worker suspend/resume cycles
+Cross-window duplicate handling
 
-## Performance Considerations
 
-### Memory Management
-- Automatic throttling when system memory < 10% available
-- Configurable memory check intervals
-- Service worker suspend/resume handling
-- Cache size limits with LRU eviction
+Submit a pull request with detailed description
 
-### Event Optimization
-- URL scheme filters on WebNavigation events
-- Debounced duplicate checking
-- Early exit strategies for single-tab operations
-- Parallel processing for bulk operations
+Reporting Issues
+Include the following information:
 
-### Resource Usage
-- Minimal background processing
-- Efficient tab tracking data structures
-- Automatic cleanup of obsolete tracking data
-- Memory monitoring with system resource awareness
+Chrome version and operating system
+Number of open tabs when issue occurred
+Steps to reproduce the problem
+Expected vs actual behavior
+Service worker console logs (if any errors)
+Memory usage at time of issue (if relevant)
 
-## License
+Development Setup
 
-MIT License - do whatever you want with this code.
+Clone the repository
+Enable Developer Mode in Chrome Extensions
+Load the unpacked extension
+Open the service worker console for debugging
+Test with various tab scenarios and memory conditions
 
----
+License
+MIT License - feel free to modify and distribute this code.
 
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/webber3242">Webber</a></p>
@@ -312,4 +323,5 @@ MIT License - do whatever you want with this code.
     <a href="https://github.com/webber3242/DeDupe2Activate/issues">🐛 Report Bug</a> •
     <a href="https://github.com/webber3242/DeDupe2Activate/issues">💡 Request Feature</a>
   </p>
+  <p><strong>Performance-optimized duplicate tab management for power users</strong></p>
 </div>
