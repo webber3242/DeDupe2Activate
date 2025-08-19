@@ -10,9 +10,7 @@
   [![JavaScript ES2022](https://img.shields.io/badge/JavaScript-ES2022-yellow?style=flat-square&logo=javascript)](https://github.com/webber3242/DeDupe2Activate)
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
-<!-- SOEMBED: start -->
 ![Demo Animation](https://github.com/webber3242/DeDupe2Activate/raw/77631aba3ba40cb50e309ae7adbd74d4ebca173f/images/Animation.gif)
-<!-- SOEMBED: end -->
 
 
 ### URLHandling 🔍 How It Handles URLs 
