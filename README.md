@@ -14,23 +14,22 @@
 
 
 ### URLHandling 🔍 How It Handles URLs 
-Different paths → Not duplicate
-E.g Not Duplicates: https://google.com/search | https://google.com/maps
+1. Different paths → Not duplicate
+      E.g Not Duplicates: https://google.com/search | https://google.com/maps
 
-Different search queries → Not duplicate
-E.g Not Duplicates: https://google.com/search?q=cat | https://google.com/search?q=dog
+2. Different search queries → Not duplicate
+      E.g Not Duplicates: https://google.com/search?q=cat | https://google.com/search?q=dog
 
-Different hash anchors → Not duplicate
-E.g Not Duplicates: https://google.com/docs#page1 | https://google.com/docs#page2
+3. Different hash anchors → Not duplicate
+      E.g Not Duplicates: https://google.com/docs#page1 | https://google.com/docs#page2
 
-Ignores case, ignores www, ignores trailing slash
-E.g Duplicates: https://google.com | https://www.googLe.com/
+4. Ignores case, ignores www, ignores trailing slash
+      E.g Duplicates: https://google.com | https://www.googLe.com/
  
 ### TabHandling  Auto Activation Logic
 Activates remaining oldest created tab
 
-### Additional Info
-Need a manual scan? Click browser icon
+Additional Info: Need a manual scan? Click browser icon
 
 ## Installation
 Option 1: Chrome Web Store
