@@ -1,40 +1,15 @@
 "use strict";
 
-// Utility functions
 const wait = timeout => new Promise(resolve => setTimeout(resolve, timeout));
 
-// Consolidated Chrome API wrappers
 const chromeAPI = {
-  getTab: (tabId) => new Promise(resolve => {
-    chrome.tabs.get(tabId, tab => resolve(chrome.runtime.lastError ? null : tab));
-  }),
-  
-  getTabs: (queryInfo = {}) => new Promise(resolve => {
-    chrome.tabs.query(queryInfo, tabs => resolve(chrome.runtime.lastError ? null : tabs));
-  }),
-  
-  getWindows: () => new Promise(resolve => {
-    chrome.windows.getAll(null, windows => resolve(chrome.runtime.lastError ? null : windows));
-  }),
-  
-  getActiveWindow: () => new Promise(resolve => {
-    chrome.windows.getLastFocused(null, window => resolve(chrome.runtime.lastError ? null : window.id));
-  }),
-  
-  updateTab: (tabId, props) => new Promise(resolve => {
-    chrome.tabs.update(tabId, props, () => resolve());
-  }),
-  
-  updateWindow: (windowId, props) => new Promise(resolve => {
-    chrome.windows.update(windowId, props, () => {
-      if (!chrome.runtime.lastError) resolve();
-    });
-  }),
-  
-  removeTab: (tabId) => new Promise(resolve => {
-    chrome.tabs.remove(tabId, () => resolve());
-  }),
-  
+  getTab: (tabId) => new Promise(resolve => chrome.tabs.get(tabId, resolve)),
+  getTabs: (queryInfo = {}) => new Promise(resolve => chrome.tabs.query(queryInfo, resolve)),
+  getWindows: () => new Promise(resolve => chrome.windows.getAll(null, resolve)),
+  getActiveWindow: () => new Promise(resolve => chrome.windows.getLastFocused(null, window => resolve(window.id))),
+  updateTab: (tabId, props) => new Promise(resolve => chrome.tabs.update(tabId, props, resolve)),
+  updateWindow: (windowId, props) => new Promise(resolve => chrome.windows.update(windowId, props, resolve)),
+  removeTab: (tabId) => new Promise(resolve => chrome.tabs.remove(tabId, resolve)),
   focusTab: async (tabId, windowId) => {
     await Promise.all([
       chromeAPI.updateTab(tabId, { active: true }),
@@ -43,19 +18,16 @@ const chromeAPI = {
   }
 };
 
-// Consolidated URL utilities
 const urlUtils = {
   isBlank: (url) => url === "about:blank",
   isChrome: (url) => url.startsWith("chrome://") || url.startsWith("view-source:chrome-search"),
   isBrowser: (url) => url.startsWith("about:") || url.startsWith("chrome://"),
   isValid: (url) => /^(f|ht)tps?:\/\//i.test(url),
-  
   normalize: (url) => {
     if (!urlUtils.isValid(url)) return url;
     let normalized = url.replace("://www.", "://").toLowerCase();
     return normalized.replace(/\/$/, "");
   },
-  
   toPattern: (url) => {
     if (urlUtils.isValid(url)) {
       const uri = new URL(url);
@@ -69,7 +41,6 @@ const urlUtils = {
   }
 };
 
-// Simplified TabsInfo class
 class TabsInfo {
   constructor() {
     this.tabs = new Map();
@@ -84,11 +55,7 @@ class TabsInfo {
   }
 
   addTab(tabId, url = null) {
-    this.tabs.set(tabId, { 
-      url, 
-      lastUpdate: Date.now(), 
-      ignored: false 
-    });
+    this.tabs.set(tabId, { url, lastUpdate: Date.now(), ignored: false });
   }
 
   updateTab(tabId, url) {
@@ -130,65 +97,49 @@ const duplicateHandler = {
   shouldKeepTab: (tab1, tab2) => {
     const time1 = tabsInfo.getLastUpdate(tab1.id);
     const time2 = tabsInfo.getLastUpdate(tab2.id);
-    
     if (!time1) return tab2;
     if (!time2) return tab1;
-    
-    // Keep older tab
     return time1 < time2 ? tab1 : tab2;
   },
-  
+
   async closeDuplicate(tabToClose, tabToKeep) {
     try {
       tabsInfo.ignoreTab(tabToClose.id);
       await chromeAPI.removeTab(tabToClose.id);
-      
-      // Activate the kept tab
-      await chromeAPI.focusTab(tabToKeep.id, tabToKeep.windowId);
-      
-      return true;
+      chromeAPI.focusTab(tabToKeep.id, tabToKeep.windowId).catch(console.error);
     } catch (error) {
       console.error("Failed to close duplicate:", error);
       tabsInfo.ignoreTab(tabToClose.id, false);
-      return false;
     }
   },
-  
+
   async findAndCloseDuplicates(targetTab) {
-    if (tabsInfo.isIgnored(targetTab.id) || urlUtils.isBlank(targetTab.url)) {
-      return;
-    }
-    
+    if (tabsInfo.isIgnored(targetTab.id) || urlUtils.isBlank(targetTab.url)) return;
     const pattern = urlUtils.toPattern(targetTab.url);
     if (!pattern) return;
-    
     const tabs = await chromeAPI.getTabs({ url: pattern });
     if (!tabs || tabs.length < 2) return;
-    
     const normalizedUrl = urlUtils.normalize(targetTab.url);
-    
     for (const tab of tabs) {
       if (tab.id === targetTab.id || tabsInfo.isIgnored(tab.id)) continue;
       if (urlUtils.normalize(tab.url) === normalizedUrl) {
         const tabToKeep = duplicateHandler.shouldKeepTab(targetTab, tab);
         const tabToClose = tabToKeep.id === targetTab.id ? tab : targetTab;
-        
         await duplicateHandler.closeDuplicate(tabToClose, tabToKeep);
-        if (tabToClose.id === targetTab.id) break; // Target tab was closed
+        if (tabToClose.id === targetTab.id) break;
       }
     }
   },
-  
+
   async processAllTabs() {
     try {
-      await wait(2000); // Wait for browser to stabilize
+      await wait(2000);
       const tabs = await chromeAPI.getTabs({ status: "complete" });
-      
       if (tabs) {
         for (const tab of tabs) {
           if (!tabsInfo.isIgnored(tab.id) && !urlUtils.isBlank(tab.url)) {
             await duplicateHandler.findAndCloseDuplicates(tab);
-            await wait(100); // Small delay between operations
+            await wait(100);
           }
         }
       }
@@ -198,64 +149,56 @@ const duplicateHandler = {
   }
 };
 
-// Event handlers
 const eventHandlers = {
   onTabCreated: (tab) => {
     tabsInfo.addTab(tab.id, tab.url);
     if (tab.status === "complete" && !urlUtils.isBlank(tab.url)) {
-      duplicateHandler.findAndCloseDuplicates(tab);
+      duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
     }
   },
-  
+
   onTabUpdated: (tabId, changeInfo, tab) => {
     if (tabsInfo.isIgnored(tabId) || changeInfo.status !== "complete") return;
-    
-    tabsInfo.updateTab(tabId, tab.url);
-    if (!urlUtils.isBlank(tab.url)) {
-      duplicateHandler.findAndCloseDuplicates(tab);
+    if (tabsInfo.urlChanged(tabId, tab.url)) {
+      tabsInfo.updateTab(tabId, tab.url);
+      if (!urlUtils.isBlank(tab.url)) duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
     }
   },
-  
+
   onTabRemoved: (tabId, removeInfo) => {
     tabsInfo.removeTab(tabId);
   },
-  
-  onBeforeNavigate: async (details) => {
+
+  onBeforeNavigate: (details) => {
     if (details.frameId === 0 && details.tabId !== -1 && !urlUtils.isBlank(details.url)) {
-      const tab = await chromeAPI.getTab(details.tabId);
-      if (tab && !tabsInfo.isIgnored(tab.id)) {
-        tabsInfo.updateTab(tab.id, details.url);
-        duplicateHandler.findAndCloseDuplicates({ ...tab, url: details.url });
-      }
+      (async () => {
+        const tab = await chromeAPI.getTab(details.tabId);
+        if (tab && !tabsInfo.isIgnored(tab.id)) {
+          if (tabsInfo.urlChanged(tab.id, details.url)) {
+            tabsInfo.updateTab(tab.id, details.url);
+            duplicateHandler.findAndCloseDuplicates({ ...tab, url: details.url }).catch(console.error);
+          }
+        }
+      })();
     }
   }
 };
 
-// Initialize extension
 const initialize = async () => {
   try {
     console.log("DeDupe2Activate starting...");
-    
-    // Set up event listeners
     chrome.tabs.onCreated.addListener(eventHandlers.onTabCreated);
     chrome.tabs.onUpdated.addListener(eventHandlers.onTabUpdated);
     chrome.tabs.onRemoved.addListener(eventHandlers.onTabRemoved);
     chrome.webNavigation.onBeforeNavigate.addListener(eventHandlers.onBeforeNavigate);
-    
-    // Handle icon clicks
     chrome.action.onClicked.addListener(() => {
-      duplicateHandler.processAllTabs();
+      duplicateHandler.processAllTabs().catch(console.error);
     });
-    
-    // Initial cleanup after delay
-    setTimeout(() => duplicateHandler.processAllTabs(), 3000);
-    
+    setTimeout(() => duplicateHandler.processAllTabs().catch(console.error), 3000);
     console.log("DeDupe2Activate initialized successfully");
-    
   } catch (error) {
     console.error("Failed to initialize extension:", error);
   }
 };
 
-// Start the extension
 initialize();
