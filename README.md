@@ -11,32 +11,28 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 
-## Features
+## What does it do? 
+Closes duplicate tabs automatically based on #urlhandling and activates the remaining tab based on #tabhandling.
 
-DeDupe2Activate intelligently manages your browser tabs by automatically detecting and closing duplicates while preserving your browsing context. The extension works silently in the background, keeping your browser organized without interrupting your workflow.
+### URLHandling 🔍 How It Handles URLs 
+Different paths → Not duplicate
+E.g Not Duplicates: https://google.com/search | https://google.com/maps
 
-## How It Works
+Different search queries → Not duplicate
+E.g Not Duplicates: https://google.com/search?q=cat | https://google.com/search?q=dog
 
-### URL Normalization Rules
-- Paths, query strings, and anchors are considered significant
-- Automatically upgrades `http://` to `https://`
-- Ignores `www.` prefixes, letter case differences, and trailing slashes
-- Normalizes URLs to prevent false duplicates
+Different hash anchors → Not duplicate
+E.g Not Duplicates: https://google.com/docs#page1 | https://google.com/docs#page2
 
-### Duplicate Tab Priority System
-When duplicates are found, the extension keeps tabs based on this priority order:
+Ignores case, ignores www, ignores trailing slash
+E.g Duplicates: https://google.com | https://www.googLe.com/
+ 
+### TabHandling  Auto Activation Logic
+Activates remaining oldest created tab
 
-1. **Active/Focused Tabs** – Currently active tabs are always preserved
-2. **Audible Tabs** – Tabs playing audio take priority
-3. **Unsaved Content** – Tabs with form data or unsaved changes
-4. **Oldest Tab** – The first opened duplicate is kept
-5. **Fallback** – Lower tab ID if all else is equal
-
-**Key Features:**
-- Detects duplicates across all Chrome windows
-- No page reloads when focusing preserved tabs
-- Handles HTTP/HTTPS protocol differences intelligently
-- Pinned tabs are treated with normal priority rules
+### Additional Info
+Need a manual scan? Click browser icon
+Want configuration? You won't find any here. 
 
 ## Installation
 
@@ -52,7 +48,7 @@ When duplicates are found, the extension keeps tabs based on this priority order
 3. Enable "Developer mode" using the toggle in the top-right corner
 4. Click "Load unpacked" and select the downloaded extension folder
 
-## File Structure
+#### File Structure
 
 ```
 DeDupe2Activate/
@@ -62,79 +58,11 @@ DeDupe2Activate/
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
+├─  _locales
+     ├── en
+       ├──messages.json
 └── README.md             # Documentation
 ```
-
-## Technical Details
-
-### Core Components
-- **TabsInfo Class**: Manages tab state and tracking data with efficient memory usage
-- **Memory Management**: Real-time system monitoring with automatic throttling to prevent performance issues
-- **URL Pattern Handler**: Advanced normalization using Chrome's native match patterns
-- **Event Processing**: Integrated with WebNavigation API for precise duplicate detection
-
-### Smart Closure Algorithm
-The extension uses an intelligent algorithm to determine which duplicates to close:
-
-- Analyzes tab priority using focus state, audio status, and creation time
-- Closes less relevant duplicates while preserving user context
-- Handles multiple Chrome windows seamlessly
-- Optimizes browser performance through efficient background processing
-
-### Manual Controls
-- **Extension Icon**: Click the extension icon to manually trigger a cleanup of all current duplicates
-- **Startup Cleanup**: Automatically runs 5 seconds after Chrome starts to clean existing duplicates
-- **Install Cleanup**: Runs 3.5 seconds after extension installation or updates
-
-## Configuration
-
-### Adding Ignored Domains
-To exclude specific domains from duplicate detection, modify the `shouldIgnoreDomain` function in `background.js`:
-
-```javascript
-const shouldIgnoreDomain = (url) => {
-    const ignoredDomains = [
-        'localhost',
-        '127.0.0.1',
-        'chrome-extension',
-        'your-domain.com',       // Add your custom domains here
-        'internal-tool.local',
-        'development.example.com'
-    ];
-    
-    try {
-        const hostname = new URL(url).hostname;
-        return ignoredDomains.some(domain => hostname.includes(domain));
-    } catch (error) {
-        return true; // Ignore malformed URLs
-    }
-};
-```
-
-## Debugging & Troubleshooting
-
-### Debug Mode
-1. Navigate to `chrome://extensions/`
-2. Find DeDupe2Activate and click "Service worker"
-3. Monitor the console for real-time event processing and error logs
-
-### Common Issues
-- **Extension not working**: Ensure Developer mode is enabled and the extension is loaded correctly
-- **False duplicates**: Check if specific domains need to be added to the ignore list
-- **Performance issues**: The extension includes automatic throttling, but very large numbers of tabs may require manual cleanup
-
-## Contributing
-
-### Bug Reports
-When reporting bugs, please include:
-- Current number of open tabs
-- Steps to reproduce the issue
-- Expected vs actual behavior
-- Console logs (if any errors are present)
-- Chrome version and operating system
-
-### Feature Requests
-We welcome feature requests and suggestions for improving the extension's functionality.
 
 ## License
 
