@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "DeDupe2Activate: Auto-Close Dupes & Activate Older"
+  },
+  "extDescription": {
+    "message": "Automatically closes duplicate tabs and activates the remaining tab"
+  },
+  "actionTitle": {
+    "message": "Duplicate Tabs Manager (Auto-mode)"
+  }
+}
