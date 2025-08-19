@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": DeDupe2Activate: Auto Close Duplicates & Activate"
+    "message": "DeDupe2Activate: Auto Close Duplicates & Activate"
   },
   "extDescription": {
     "message": "Automatically closes duplicate tabs and activates the remaining tab"
@@ -9,4 +9,5 @@
     "message": "Manual Click-to-Close All Duplicates"
   }
 }
+
 
