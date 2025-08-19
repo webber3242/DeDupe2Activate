@@ -11,7 +11,7 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 <!-- SOEMBED: start -->
-![Demo Animation](images/Animation-ezgif.com-resize.gif)
+![Demo Animation](images/Animation.gif)
 <!-- SOEMBED: end -->
 
 
