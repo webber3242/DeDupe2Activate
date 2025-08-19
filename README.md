@@ -11,8 +11,6 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 
-## What does it do? 
-Closes duplicate tabs automatically based on #urlhandling and activates the remaining tab based on #tabhandling.
 
 ### URLHandling 🔍 How It Handles URLs 
 Different paths → Not duplicate
