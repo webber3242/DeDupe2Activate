@@ -11,7 +11,7 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 <!-- SOEMBED: start -->
-![My project screenshot](/images/Animation.gif)
+![Demo Animation](https://github.com/webber3242/DeDupe2Activate/raw/77631aba3ba40cb50e309ae7adbd74d4ebca173f/images/Animation.gif)
 <!-- SOEMBED: end -->
 
 
