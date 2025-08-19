@@ -25,11 +25,13 @@
 
 4. Ignores case, ignores www, ignores trailing slash
       E.g Duplicates: https://google.com | https://www.googLe.com/
+
  
 ### TabHandling  Auto Activation Logic
 Activates remaining oldest created tab
 
 Additional Info: Need a manual scan? Click browser icon
+
 
 ## Installation
 Option 1: Chrome Web Store
