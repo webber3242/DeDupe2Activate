@@ -30,14 +30,12 @@ Activates remaining oldest created tab
 
 ### Additional Info
 Need a manual scan? Click browser icon
-Want configuration? You won't find any here. 
 
 ## Installation
-
-### Option 1: Chrome Web Store
+Option 1: Chrome Web Store
 *Coming soon - publication in progress*
 
-### Option 2: Manual Installation
+Option 2: Manual Installation
 1. Download or clone this repository:
    ```bash
    git clone https://github.com/webber3242/DeDupe2Activate.git
