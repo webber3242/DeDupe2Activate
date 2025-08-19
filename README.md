@@ -3,7 +3,7 @@
 <div align="center">
   <img src="images/icon128.png" alt="DeDupe2Activate Logo" width="128" height="128">
   
-  **Intelligent Chrome extension that automatically closes duplicate tabs & automatically focuses remaining tab**
+  **Chrome browser extension that automatically closes duplicate tabs & automatically focuses remaining tab**
   
   [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?style=flat-square&logo=google-chrome)](https://github.com/webber3242/DeDupe2Activate)
   [![Manifest V3](https://img.shields.io/badge/Manifest-V3-green?style=flat-square)](https://github.com/webber3242/DeDupe2Activate)
