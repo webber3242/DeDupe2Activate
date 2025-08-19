@@ -52,9 +52,9 @@ Want configuration? You won't find any here.
 
 ```
 DeDupe2Activate/
-├── manifest.json          # Extension configuration
-├── background.js          # Main service worker logic
-├── images/               # Extension icons
+├── manifest.json           # Extension configuration
+├── background.js           # Main service worker logic
+├── images/                 # Extension icons
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
