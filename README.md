@@ -11,7 +11,7 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 <!-- SOEMBED: start -->
-![My project screenshot](./images/Animated.gif)
+![My project screenshot](./images/Animation.gif)
 <!-- SOEMBED: end -->
 
 
