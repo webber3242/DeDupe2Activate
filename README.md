@@ -36,13 +36,13 @@ Option 1: Chrome Web Store
 *Coming soon - publication in progress*
 
 Option 2: Manual Installation
-1. Download or clone this repository:
+- Download or clone this repository:
    ```bash
    git clone https://github.com/webber3242/DeDupe2Activate.git
    ```
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" using the toggle in the top-right corner
-4. Click "Load unpacked" and select the downloaded extension folder
+- Open Chrome and navigate to `chrome://extensions/`
+- Enable "Developer mode" using the toggle in the top-right corner
+- Click "Load unpacked" and select the downloaded extension folder
 
 #### File Structure
 
