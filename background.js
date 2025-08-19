@@ -106,6 +106,7 @@ const duplicateHandler = {
     try {
       tabsInfo.ignoreTab(tabToClose.id);
       await chromeAPI.removeTab(tabToClose.id);
+      await wait(25);
       chromeAPI.focusTab(tabToKeep.id, tabToKeep.windowId).catch(console.error);
     } catch (error) {
       console.error("Failed to close duplicate:", error);
@@ -139,7 +140,6 @@ const duplicateHandler = {
         for (const tab of tabs) {
           if (!tabsInfo.isIgnored(tab.id) && !urlUtils.isBlank(tab.url)) {
             await duplicateHandler.findAndCloseDuplicates(tab);
-            await wait(100);
           }
         }
       }
@@ -161,7 +161,9 @@ const eventHandlers = {
     if (tabsInfo.isIgnored(tabId) || changeInfo.status !== "complete") return;
     if (tabsInfo.urlChanged(tabId, tab.url)) {
       tabsInfo.updateTab(tabId, tab.url);
-      if (!urlUtils.isBlank(tab.url)) duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
+      if (!urlUtils.isBlank(tab.url)) {
+        duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
+      }
     }
   },
 
