@@ -52,14 +52,15 @@ Want configuration? You won't find any here.
 DeDupe2Activate/
 ├── manifest.json           # Extension configuration
 ├── background.js           # Main service worker logic
+├── LICENSE.txt             # License file
+├── README.md               # Documentation
 ├── images/                 # Extension icons
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
-├─  _locales
-     ├── en
-       ├──messages.json
-└── README.md             # Documentation
+└── _locales/               # Internationalization
+    └── en/                 # English locale
+        └── messages.json   # English messages
 ```
 
 ## License
