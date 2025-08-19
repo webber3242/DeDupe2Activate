@@ -18,6 +18,23 @@ const chromeAPI = {
   }
 };
 
+// Spec-compliant error handling wrapper
+const safeTabOperation = async (operation, ...args) => {
+  try {
+    return await operation(...args);
+  } catch (error) {
+    if (error.message.includes('No tab with id') || 
+        error.message.includes('Tab not found') ||
+        error.message.includes('Cannot access') ||
+        chrome.runtime.lastError?.message?.includes('No tab with id')) {
+      // Tab was already closed or is inaccessible - ignore
+      return null;
+    }
+    console.error('Tab operation failed:', error);
+    throw error;
+  }
+};
+
 const urlUtils = {
   isBlank: (url) => url === "about:blank",
   isChrome: (url) => url.startsWith("chrome://") || url.startsWith("view-source:chrome-search"),
@@ -48,7 +65,7 @@ class TabsInfo {
   }
 
   async initialize() {
-    const tabs = await chromeAPI.getTabs();
+    const tabs = await safeTabOperation(chromeAPI.getTabs, { status: "complete" });
     if (tabs) {
       tabs.forEach(tab => this.addTab(tab.id, tab.url));
     }
@@ -105,9 +122,9 @@ const duplicateHandler = {
   async closeDuplicate(tabToClose, tabToKeep) {
     try {
       tabsInfo.ignoreTab(tabToClose.id);
-      await chromeAPI.removeTab(tabToClose.id);
+      await safeTabOperation(chromeAPI.removeTab, tabToClose.id);
       await wait(25);
-      chromeAPI.focusTab(tabToKeep.id, tabToKeep.windowId).catch(console.error);
+      safeTabOperation(chromeAPI.focusTab, tabToKeep.id, tabToKeep.windowId).catch(console.error);
     } catch (error) {
       console.error("Failed to close duplicate:", error);
       tabsInfo.ignoreTab(tabToClose.id, false);
@@ -116,13 +133,23 @@ const duplicateHandler = {
 
   async findAndCloseDuplicates(targetTab) {
     if (tabsInfo.isIgnored(targetTab.id) || urlUtils.isBlank(targetTab.url)) return;
+    
     const pattern = urlUtils.toPattern(targetTab.url);
     if (!pattern) return;
-    const tabs = await chromeAPI.getTabs({ url: pattern });
+    
+    // Use spec-compliant querying with status filter for better performance
+    const tabs = await safeTabOperation(chromeAPI.getTabs, { 
+      url: pattern, 
+      status: "complete" 
+    });
+    
     if (!tabs || tabs.length < 2) return;
+    
     const normalizedUrl = urlUtils.normalize(targetTab.url);
+    
     for (const tab of tabs) {
       if (tab.id === targetTab.id || tabsInfo.isIgnored(tab.id)) continue;
+      
       if (urlUtils.normalize(tab.url) === normalizedUrl) {
         const tabToKeep = duplicateHandler.shouldKeepTab(targetTab, tab);
         const tabToClose = tabToKeep.id === targetTab.id ? tab : targetTab;
@@ -135,7 +162,8 @@ const duplicateHandler = {
   async processAllTabs() {
     try {
       await wait(2000);
-      const tabs = await chromeAPI.getTabs({ status: "complete" });
+      // Leverage spec's standardized tab querying with status filter
+      const tabs = await safeTabOperation(chromeAPI.getTabs, { status: "complete" });
       if (tabs) {
         for (const tab of tabs) {
           if (!tabsInfo.isIgnored(tab.id) && !urlUtils.isBlank(tab.url)) {
@@ -159,6 +187,7 @@ const eventHandlers = {
 
   onTabUpdated: (tabId, changeInfo, tab) => {
     if (tabsInfo.isIgnored(tabId) || changeInfo.status !== "complete") return;
+    
     if (tabsInfo.urlChanged(tabId, tab.url)) {
       tabsInfo.updateTab(tabId, tab.url);
       if (!urlUtils.isBlank(tab.url)) {
@@ -171,17 +200,19 @@ const eventHandlers = {
     tabsInfo.removeTab(tabId);
   },
 
-  onBeforeNavigate: (details) => {
+  onBeforeNavigate: async (details) => {
     if (details.frameId === 0 && details.tabId !== -1 && !urlUtils.isBlank(details.url)) {
-      (async () => {
-        const tab = await chromeAPI.getTab(details.tabId);
+      try {
+        const tab = await safeTabOperation(chromeAPI.getTab, details.tabId);
         if (tab && !tabsInfo.isIgnored(tab.id)) {
           if (tabsInfo.urlChanged(tab.id, details.url)) {
             tabsInfo.updateTab(tab.id, details.url);
             duplicateHandler.findAndCloseDuplicates({ ...tab, url: details.url }).catch(console.error);
           }
         }
-      })();
+      } catch (error) {
+        // Safe operation already handled the error
+      }
     }
   }
 };
@@ -189,13 +220,21 @@ const eventHandlers = {
 const initialize = async () => {
   try {
     console.log("DeDupe2Activate starting...");
+    
     chrome.tabs.onCreated.addListener(eventHandlers.onTabCreated);
     chrome.tabs.onUpdated.addListener(eventHandlers.onTabUpdated);
     chrome.tabs.onRemoved.addListener(eventHandlers.onTabRemoved);
-    chrome.webNavigation.onBeforeNavigate.addListener(eventHandlers.onBeforeNavigate);
+    
+    // Filter events at the API level for better performance - only HTTPS/HTTP
+    chrome.webNavigation.onBeforeNavigate.addListener(
+      eventHandlers.onBeforeNavigate,
+      { url: [{ urlMatches: 'https?://.*' }] }
+    );
+    
     chrome.action.onClicked.addListener(() => {
       duplicateHandler.processAllTabs().catch(console.error);
     });
+    
     setTimeout(() => duplicateHandler.processAllTabs().catch(console.error), 3000);
     console.log("DeDupe2Activate initialized successfully");
   } catch (error) {
