@@ -76,7 +76,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 <div align="center">
-  <p>Made by <a href="https://github.com/webber3242">Webber</a></p>
+  <p>Made by <a href="https://github.com/webberLV">Webber</a></p>
   <p>
     <a href="https://github.com/webber3242/DeDupe2Activate">⭐ Star</a> •
     <a href="https://github.com/webber3242/DeDupe2Activate/issues">🐛 Report Bug</a> •
