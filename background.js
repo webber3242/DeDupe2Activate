@@ -1,12 +1,9 @@
 "use strict";
-
 const wait = timeout => new Promise(resolve => setTimeout(resolve, timeout));
 
 const chromeAPI = {
   getTab: (tabId) => new Promise(resolve => chrome.tabs.get(tabId, resolve)),
   getTabs: (queryInfo = {}) => new Promise(resolve => chrome.tabs.query(queryInfo, resolve)),
-  getWindows: () => new Promise(resolve => chrome.windows.getAll(null, resolve)),
-  getActiveWindow: () => new Promise(resolve => chrome.windows.getLastFocused(null, window => resolve(window.id))),
   updateTab: (tabId, props) => new Promise(resolve => chrome.tabs.update(tabId, props, resolve)),
   updateWindow: (windowId, props) => new Promise(resolve => chrome.windows.update(windowId, props, resolve)),
   removeTab: (tabId) => new Promise(resolve => chrome.tabs.remove(tabId, resolve)),
@@ -17,27 +14,21 @@ const chromeAPI = {
     ]);
   }
 };
-
-// Spec-compliant error handling wrapper
 const safeTabOperation = async (operation, ...args) => {
   try {
     return await operation(...args);
   } catch (error) {
     if (error.message.includes('No tab with id') || 
         error.message.includes('Tab not found') ||
-        error.message.includes('Cannot access') ||
-        chrome.runtime.lastError?.message?.includes('No tab with id')) {
-      // Tab was already closed or is inaccessible - ignore
+        error.message.includes('Cannot access')) {
       return null;
     }
     console.error('Tab operation failed:', error);
     throw error;
   }
 };
-
 const urlUtils = {
   isBlank: (url) => url === "about:blank",
-  isChrome: (url) => url.startsWith("chrome://") || url.startsWith("view-source:chrome-search"),
   isBrowser: (url) => url.startsWith("about:") || url.startsWith("chrome://"),
   isValid: (url) => /^(f|ht)tps?:\/\//i.test(url),
   normalize: (url) => {
@@ -57,28 +48,28 @@ const urlUtils = {
     return null;
   }
 };
-
 class TabsInfo {
   constructor() {
     this.tabs = new Map();
     this.initialize();
   }
-
   async initialize() {
     const tabs = await safeTabOperation(chromeAPI.getTabs, { status: "complete" });
     if (tabs) {
-      tabs.forEach(tab => this.addTab(tab.id, tab.url));
+      tabs.forEach(tab => this.addTab(tab.id, tab.url, tab.windowId));
     }
   }
-
-  addTab(tabId, url = null) {
-    this.tabs.set(tabId, { url, lastUpdate: Date.now(), ignored: false });
+  addTab(tabId, url = null, windowId = null) {
+    this.tabs.set(tabId, { url, windowId, lastUpdate: Date.now(), ignored: false });
   }
-
-  updateTab(tabId, url) {
-    const tab = this.tabs.get(tabId);
-    if (tab) {
-      tab.url = url;
+  updateTab(tabId, url, windowId = null) {
+    let tab = this.tabs.get(tabId);
+    if (!tab) {
+      tab = { url, windowId, lastUpdate: Date.now(), ignored: false };
+      this.tabs.set(tabId, tab);
+    } else {
+      if (url !== undefined) tab.url = url;
+      if (windowId !== null) tab.windowId = windowId;
       tab.lastUpdate = Date.now();
     }
   }
@@ -102,14 +93,16 @@ class TabsInfo {
     return tab ? tab.lastUpdate : null;
   }
 
+  getWindowId(tabId) {
+    const tab = this.tabs.get(tabId);
+    return tab ? tab.windowId : null;
+  }
   urlChanged(tabId, newUrl) {
     const tab = this.tabs.get(tabId);
     return !tab || tab.url !== newUrl;
   }
 }
-
 const tabsInfo = new TabsInfo();
-
 const duplicateHandler = {
   shouldKeepTab: (tab1, tab2) => {
     const time1 = tabsInfo.getLastUpdate(tab1.id);
@@ -118,26 +111,24 @@ const duplicateHandler = {
     if (!time2) return tab1;
     return time1 < time2 ? tab1 : tab2;
   },
-
   async closeDuplicate(tabToClose, tabToKeep) {
     try {
       tabsInfo.ignoreTab(tabToClose.id);
       await safeTabOperation(chromeAPI.removeTab, tabToClose.id);
       await wait(25);
-      safeTabOperation(chromeAPI.focusTab, tabToKeep.id, tabToKeep.windowId).catch(console.error);
+      
+      const windowId = tabsInfo.getWindowId(tabToKeep.id) || tabToKeep.windowId;
+      safeTabOperation(chromeAPI.focusTab, tabToKeep.id, windowId).catch(console.error);
     } catch (error) {
       console.error("Failed to close duplicate:", error);
       tabsInfo.ignoreTab(tabToClose.id, false);
     }
   },
-
   async findAndCloseDuplicates(targetTab) {
     if (tabsInfo.isIgnored(targetTab.id) || urlUtils.isBlank(targetTab.url)) return;
     
     const pattern = urlUtils.toPattern(targetTab.url);
     if (!pattern) return;
-    
-    // Use spec-compliant querying with status filter for better performance
     const tabs = await safeTabOperation(chromeAPI.getTabs, { 
       url: pattern, 
       status: "complete" 
@@ -158,11 +149,9 @@ const duplicateHandler = {
       }
     }
   },
-
   async processAllTabs() {
     try {
       await wait(2000);
-      // Leverage spec's standardized tab querying with status filter
       const tabs = await safeTabOperation(chromeAPI.getTabs, { status: "complete" });
       if (tabs) {
         for (const tab of tabs) {
@@ -176,71 +165,69 @@ const duplicateHandler = {
     }
   }
 };
-
 const eventHandlers = {
   onTabCreated: (tab) => {
-    tabsInfo.addTab(tab.id, tab.url);
+    tabsInfo.addTab(tab.id, tab.url, tab.windowId);
     if (tab.status === "complete" && !urlUtils.isBlank(tab.url)) {
       duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
     }
   },
-
   onTabUpdated: (tabId, changeInfo, tab) => {
     if (tabsInfo.isIgnored(tabId) || changeInfo.status !== "complete") return;
     
     if (tabsInfo.urlChanged(tabId, tab.url)) {
-      tabsInfo.updateTab(tabId, tab.url);
+      tabsInfo.updateTab(tabId, tab.url, tab.windowId);
       if (!urlUtils.isBlank(tab.url)) {
         duplicateHandler.findAndCloseDuplicates(tab).catch(console.error);
       }
     }
   },
-
-  onTabRemoved: (tabId, removeInfo) => {
-    tabsInfo.removeTab(tabId);
-  },
-
-  onBeforeNavigate: async (details) => {
+onTabRemoved: (tabId) => {
+  tabsInfo.removeTab(tabId);
+},
+onTabAttached: (tabId) => {
+  (async () => {
+    const tab = await safeTabOperation(chromeAPI.getTab, tabId);
+    if (tab) {
+      tabsInfo.updateTab(tab.id, tab.url, tab.windowId);
+      if (!urlUtils.isBlank(tab.url)) {
+        await duplicateHandler.findAndCloseDuplicates(tab);
+      }
+    }
+  })();
+},
+  onBeforeNavigate: (details) => {
     if (details.frameId === 0 && details.tabId !== -1 && !urlUtils.isBlank(details.url)) {
-      try {
+      (async () => {
         const tab = await safeTabOperation(chromeAPI.getTab, details.tabId);
         if (tab && !tabsInfo.isIgnored(tab.id)) {
           if (tabsInfo.urlChanged(tab.id, details.url)) {
-            tabsInfo.updateTab(tab.id, details.url);
+            tabsInfo.updateTab(tab.id, details.url, tab.windowId);
             duplicateHandler.findAndCloseDuplicates({ ...tab, url: details.url }).catch(console.error);
           }
         }
-      } catch (error) {
-        // Safe operation already handled the error
-      }
+      })();
     }
   }
 };
-
 const initialize = async () => {
   try {
-    console.log("deDupe2Activate starting...");
+    console.log("Enhanced Auto DeDupe starting...");
     
     chrome.tabs.onCreated.addListener(eventHandlers.onTabCreated);
     chrome.tabs.onUpdated.addListener(eventHandlers.onTabUpdated);
     chrome.tabs.onRemoved.addListener(eventHandlers.onTabRemoved);
+    chrome.tabs.onAttached.addListener(eventHandlers.onTabAttached);
     
-    // Filter events at the API level for better performance - only HTTPS/HTTP
     chrome.webNavigation.onBeforeNavigate.addListener(
       eventHandlers.onBeforeNavigate,
       { url: [{ urlMatches: 'https?://.*' }] }
     );
     
-    chrome.action.onClicked.addListener(() => {
-      duplicateHandler.processAllTabs().catch(console.error);
-    });
-    
     setTimeout(() => duplicateHandler.processAllTabs().catch(console.error), 3000);
-    console.log("deDupe2Activate initialized successfully");
+    console.log("Enhanced Auto DeDupe initialized successfully");
   } catch (error) {
     console.error("Failed to initialize extension:", error);
   }
 };
-
 initialize();
-
