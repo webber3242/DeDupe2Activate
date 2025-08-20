@@ -1,5 +1,5 @@
 ![Demo Animation](https://github.com/webber3242/DeDupe2Activate/raw/77631aba3ba40cb50e309ae7adbd74d4ebca173f/images/Animation.gif)
-# DeDupe2Activate
+# deDupe2Activate
 
 <div align="center">
   <img src="images/icon128.png" alt="DeDupe2Activate Logo" width="128" height="128">
