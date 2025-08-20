@@ -35,8 +35,6 @@
 
 Activates remaining oldest created tab
 
-Additional Info: Need a manual scan? Click browser icon
-
 ## Installation
 
 Option 1: Chrome Web Store
