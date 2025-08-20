@@ -219,7 +219,7 @@ const eventHandlers = {
 
 const initialize = async () => {
   try {
-    console.log("DeDupe2Activate starting...");
+    console.log("deDupe2Activate starting...");
     
     chrome.tabs.onCreated.addListener(eventHandlers.onTabCreated);
     chrome.tabs.onUpdated.addListener(eventHandlers.onTabUpdated);
@@ -236,10 +236,11 @@ const initialize = async () => {
     });
     
     setTimeout(() => duplicateHandler.processAllTabs().catch(console.error), 3000);
-    console.log("DeDupe2Activate initialized successfully");
+    console.log("deDupe2Activate initialized successfully");
   } catch (error) {
     console.error("Failed to initialize extension:", error);
   }
 };
 
 initialize();
+
