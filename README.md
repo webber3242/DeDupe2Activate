@@ -1,4 +1,5 @@
 ![Demo Animation](https://github.com/webber3242/DeDupe2Activate/raw/77631aba3ba40cb50e309ae7adbd74d4ebca173f/images/Animation.gif)
+
 # deDupe2Activate
 
 <div align="center">
@@ -12,32 +13,37 @@
   [![MIT License](https://img.shields.io/badge/License-MIT-red?style=flat-square)](LICENSE)
 </div>
 
+## URLHandling 🔍 How It Handles URLs
 
-### URLHandling 🔍 How It Handles URLs 
 1. Different paths → Not duplicate
-      E.g Not Duplicates: https://google.com/search | https://google.com/maps
+
+   E.g Not Duplicates: https://google.com/search | https://google.com/maps
 
 2. Different search queries → Not duplicate
-      E.g Not Duplicates: https://google.com/search?q=cat | https://google.com/search?q=dog
+
+   E.g Not Duplicates: https://google.com/search?q=cat | https://google.com/search?q=dog
 
 3. Different hash anchors → Not duplicate
-      E.g Not Duplicates: https://google.com/docs#page1 | https://google.com/docs#page2
+
+   E.g Not Duplicates: https://google.com/docs#page1 | https://google.com/docs#page2
 
 4. Ignores case, ignores www, ignores trailing slash
-      E.g Duplicates: https://google.com | https://www.googLe.com/
 
- 
-### TabHandling  Auto Activation Logic
+   E.g Duplicates: https://google.com | https://www.googLe.com/
+
+## TabHandling Auto Activation Logic
+
 Activates remaining oldest created tab
 
 Additional Info: Need a manual scan? Click browser icon
 
-
 ## Installation
+
 Option 1: Chrome Web Store
 *Coming soon - publication in progress*
 
 Option 2: Manual Installation
+
 - Download or clone this repository:
    ```bash
    git clone https://github.com/webber3242/DeDupe2Activate.git
