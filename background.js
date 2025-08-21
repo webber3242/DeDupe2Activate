@@ -1,4 +1,4 @@
-;
+"use strict";
 const wait = timeout => new Promise(resolve => setTimeout(resolve, timeout));
 
 const chromeAPI = {
@@ -231,4 +231,3 @@ const initialize = async () => {
   }
 };
 initialize();
-
