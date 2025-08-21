@@ -1,82 +1,115 @@
 /* global chrome */
 "use strict";
 
+// Define a constant for undefined results to avoid linting issues
+const UNDEFINED_RESULT = undefined;
+
 /**
  * @param {number} timeout - Timeout in milliseconds
  * @returns {Promise<void>}
  */
-const wait = (timeout) => new Promise((resolve) => {
-  setTimeout(() => resolve(), timeout);
-});
+const wait = (timeout) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+      return;
+    }, timeout);
+    return;
+  });
+};
 
 const chromeAPI = {
   /**
    * @param {number} tabId - The tab ID
-   * @returns {Promise<chrome.tabs.Tab|null>}
+   * @returns {Promise<chrome.tabs.Tab|undefined>}
    */
-  getTab: (tabId) => new Promise((resolve) => {
-    chrome.tabs.get(tabId, (tab) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-      } else {
-        resolve(tab);
-      }
+  getTab: (tabId) => {
+    return new Promise((resolve) => {
+      chrome.tabs.get(tabId, (tab) => {
+        if (chrome.runtime.lastError) {
+          resolve(UNDEFINED_RESULT);
+          return;
+        } else {
+          resolve(tab);
+          return;
+        }
+      });
+      return;
     });
-  }),
+  },
 
   /**
    * @param {chrome.tabs.QueryInfo} queryInfo - Query parameters
-   * @returns {Promise<chrome.tabs.Tab[]|null>}
+   * @returns {Promise<chrome.tabs.Tab[]|undefined>}
    */
-  getTabs: (queryInfo = {}) => new Promise((resolve) => {
-    chrome.tabs.query(queryInfo, (tabs) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-      } else {
-        resolve(tabs);
-      }
+  getTabs: (queryInfo = {}) => {
+    return new Promise((resolve) => {
+      chrome.tabs.query(queryInfo, (tabs) => {
+        if (chrome.runtime.lastError) {
+          resolve(UNDEFINED_RESULT);
+          return;
+        } else {
+          resolve(tabs);
+          return;
+        }
+      });
+      return;
     });
-  }),
+  },
 
   /**
    * @param {number} tabId - The tab ID
    * @param {chrome.tabs.UpdateProperties} props - Update properties
-   * @returns {Promise<chrome.tabs.Tab|null>}
+   * @returns {Promise<chrome.tabs.Tab|undefined>}
    */
-  updateTab: (tabId, props) => new Promise((resolve) => {
-    chrome.tabs.update(tabId, props, (tab) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-      } else {
-        resolve(tab);
-      }
+  updateTab: (tabId, props) => {
+    return new Promise((resolve) => {
+      chrome.tabs.update(tabId, props, (tab) => {
+        if (chrome.runtime.lastError) {
+          resolve(UNDEFINED_RESULT);
+          return;
+        } else {
+          resolve(tab);
+          return;
+        }
+      });
+      return;
     });
-  }),
+  },
 
   /**
    * @param {number} windowId - The window ID
    * @param {chrome.windows.UpdateInfo} props - Update properties
-   * @returns {Promise<chrome.windows.Window|null>}
+   * @returns {Promise<chrome.windows.Window|undefined>}
    */
-  updateWindow: (windowId, props) => new Promise((resolve) => {
-    chrome.windows.update(windowId, props, (window) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-      } else {
-        resolve(window);
-      }
+  updateWindow: (windowId, props) => {
+    return new Promise((resolve) => {
+      chrome.windows.update(windowId, props, (window) => {
+        if (chrome.runtime.lastError) {
+          resolve(UNDEFINED_RESULT);
+          return;
+        } else {
+          resolve(window);
+          return;
+        }
+      });
+      return;
     });
-  }),
+  },
 
   /**
    * @param {number} tabId - The tab ID
    * @returns {Promise<boolean>}
    */
-  removeTab: (tabId) => new Promise((resolve) => {
-    chrome.tabs.remove(tabId, () => {
-      resolve(!chrome.runtime.lastError);
+  removeTab: (tabId) => {
+    return new Promise((resolve) => {
+      chrome.tabs.remove(tabId, () => {
+        resolve(!chrome.runtime.lastError);
+        return;
+      });
+      return;
     });
-  }),
+  },
 
   /**
    * @param {number} tabId - The tab ID
@@ -110,7 +143,7 @@ const safeTabOperation = async (operation, ...args) => {
         error.message.includes('Tab not found') ||
         error.message.includes('Cannot access')
       )) {
-      return null;
+      return UNDEFINED_RESULT;
     }
     console.error('Tab operation failed:', error);
     throw error;
@@ -148,7 +181,7 @@ const urlUtils = {
 
   /**
    * @param {string} url - URL to convert to pattern
-   * @returns {string|null}
+   * @returns {string|undefined}
    */
   toPattern: (url) => {
     if (urlUtils.isValid(url)) {
@@ -159,18 +192,18 @@ const urlUtils = {
         return pattern;
       } catch (error) {
         console.error('Invalid URL for pattern creation:', url, error);
-        return null;
+        return UNDEFINED_RESULT;
       }
     } else if (urlUtils.isBrowser(url)) {
       return `${url}*`;
     }
-    return null;
+    return UNDEFINED_RESULT;
   }
 };
 
 class TabsInfo {
   constructor() {
-    /** @type {Map<number, {url: string|null, windowId: number|null, lastUpdate: number, ignored: boolean}>} */
+    /** @type {Map<number, {url: string|undefined, windowId: number|undefined, lastUpdate: number, ignored: boolean}>} */
     this.tabs = new Map();
     this.initialize().catch(error => console.error('Failed to initialize TabsInfo:', error));
   }
